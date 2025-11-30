@@ -17,6 +17,12 @@
 </head>
 <body>
     <div id="app">
+        <!-- Screen too small warning -->
+        <div class="screen-too-small">
+            <div class="icon">📱↔️</div>
+            <h2>Screen Too Small</h2>
+            <p>Please use a device with a wider screen to play RETRIS.</p>
+        </div>
         <!-- Main Container -->
         <div class="game-container">
             <!-- Game Area (Left Panel) -->
@@ -64,6 +70,12 @@
                         <div id="pause-overlay" class="overlay hidden">
                             <span>PAUSED</span>
                         </div>
+                    </div>
+                    <div id="touch-hint" class="touch-hint">
+                        <span>↔ Drag to move</span>
+                        <span>↓ Drag down to drop</span>
+                        <span>⚡ Swipe fast to hard drop</span>
+                        <span>👆 Tap to rotate</span>
                     </div>
                 </section>
 

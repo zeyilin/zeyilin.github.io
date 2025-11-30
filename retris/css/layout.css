@@ -18,6 +18,7 @@
     justify-content: center;
     position: relative;
     min-height: 0;
+    background-color: var(--bg-primary);
 }
 
 /* Sidebar */
@@ -103,10 +104,12 @@
     justify-content: center;
     position: absolute;
     inset: 0;
+    z-index: 1;
 }
 
 .screen.active {
     display: flex;
+    z-index: 10;
 }
 
 /* Tablet */
@@ -124,65 +127,197 @@
 /* Mobile */
 @media (max-width: 768px) {
     #app {
-        flex-direction: column;
+        flex-direction: row;
     }
     
     .game-container {
-        flex-direction: column;
-        height: auto;
+        flex-direction: row;
+        height: 100%;
         flex: 1;
         padding: var(--space-sm);
-        min-height: 0;
+        gap: var(--space-sm);
     }
     
+    /* Keep sidebar on mobile but make it compact */
     .sidebar {
+        display: flex;
+        width: 100px;
+        padding: var(--space-sm);
+        border-radius: var(--radius-md);
+    }
+    
+    .sidebar-logo {
+        display: block;
+        padding: var(--space-sm) 0;
+    }
+    
+    .sidebar-logo .logo {
+        font-size: 16px;
+        letter-spacing: 4px;
+    }
+    
+    .sidebar-content {
+        gap: var(--space-md);
+        margin-top: var(--space-sm);
+    }
+    
+    .sidebar .info-label {
+        font-size: 9px;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .sidebar .info-value {
+        font-size: 16px;
+        height: 36px;
+        padding: var(--space-xs);
+    }
+    
+    .sidebar .info-display--large .info-value,
+    .sidebar .next-piece-value {
+        height: 60px;
+    }
+    
+    .sidebar .btn-menu {
+        font-size: 10px;
+        height: 36px;
+        padding: var(--space-xs);
+        letter-spacing: 1px;
+    }
+    
+    /* Hide mobile header and controls - use gestures instead */
+    .mobile-header {
         display: none;
     }
     
-    .mobile-header {
-        display: flex;
-    }
-    
     .mobile-controls {
-        display: flex;
+        display: none;
     }
     
     .game-area {
         flex: 1;
-        padding: var(--space-sm);
+        padding: 0;
         min-height: 0;
+        touch-action: none; /* Enable custom touch handling */
     }
     
     :root {
         --cell-size: var(--cell-size-mobile);
-    }
-    
-    /* Hide desktop-only elements */
-    .sidebar-logo {
-        display: none;
     }
 }
 
 /* Very small screens */
 @media (max-width: 400px) {
     :root {
-        --cell-size: 26px;
+        --cell-size: 24px;
+    }
+    
+    .sidebar {
+        width: 80px;
+        padding: var(--space-xs);
+    }
+    
+    .sidebar-logo .logo {
+        font-size: 12px;
+        letter-spacing: 2px;
+    }
+    
+    .sidebar .info-value {
+        font-size: 14px;
+        height: 32px;
+    }
+    
+    .sidebar .info-display--large .info-value,
+    .sidebar .next-piece-value {
+        height: 50px;
+    }
+}
+
+/* Minimum supported screen - 320px */
+.screen-too-small {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg-primary);
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-lg);
+}
+
+.screen-too-small .icon {
+    font-size: 48px;
+    margin-bottom: var(--space-md);
+}
+
+.screen-too-small h2 {
+    font-size: 18px;
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+}
+
+.screen-too-small p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 320px) {
+    .screen-too-small {
+        display: flex;
+    }
+    
+    .game-container,
+    .sidebar,
+    .mobile-header,
+    .mobile-controls {
+        display: none !important;
     }
 }
 
 /* Landscape mobile */
-@media (max-height: 600px) and (orientation: landscape) {
-    .mobile-controls {
-        padding: var(--space-sm);
+@media (max-height: 500px) and (orientation: landscape) {
+    .game-container {
+        padding: var(--space-xs);
     }
     
-    .touch-btn {
-        width: 50px;
-        height: 50px;
+    .sidebar {
+        width: 90px;
     }
     
-    .touch-btn--wide {
-        height: 40px;
+    :root {
+        --cell-size: 22px;
     }
+}
+
+/* Touch hint overlay - shows briefly on first game */
+.touch-hint {
+    position: absolute;
+    bottom: var(--space-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+.touch-hint.visible {
+    opacity: 1;
+}
+
+.touch-hint span {
+    display: block;
+    margin-bottom: var(--space-xs);
+}
+
+.touch-hint span:last-child {
+    margin-bottom: 0;
 }
 

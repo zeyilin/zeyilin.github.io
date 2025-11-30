@@ -11,12 +11,24 @@ class Controls {
         this.repeatTimers = {};
         this.keysDown = new Set();
         
-        // Touch settings
+        // Touch/Swipe settings
         this.touchStartX = 0;
         this.touchStartY = 0;
         this.touchStartTime = 0;
-        this.minSwipeDistance = 30;
+        this.lastTouchX = 0;
+        this.lastTouchY = 0;
+        this.touchId = null;
+        
+        // Gesture thresholds
+        this.cellSize = 28; // Will be updated
+        this.dragThreshold = 20; // Pixels to move before registering as drag
+        this.swipeVelocityThreshold = 0.5; // Pixels per ms for hard drop
         this.tapMaxDuration = 200;
+        this.tapMaxDistance = 15;
+        
+        // Track cumulative drag distance for piece movement
+        this.dragAccumulatorX = 0;
+        this.dragAccumulatorY = 0;
         
         this.setupKeyboardControls();
         this.setupTouchControls();
@@ -153,130 +165,153 @@ class Controls {
     }
     
     /**
-     * Setup touch controls
+     * Setup touch controls - gesture-based for mobile
      */
     setupTouchControls() {
-        // Touch buttons
-        document.querySelectorAll('[data-control]').forEach(btn => {
-            // Prevent default touch behavior
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                this.handleTouchControl(btn.dataset.control);
-            }, { passive: false });
-            
-            // Also handle click for non-touch devices testing
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.handleTouchControl(btn.dataset.control);
-            });
-            
-            // Setup touch repeat for movement buttons
-            let repeatTimer = null;
-            const startRepeat = (control) => {
-                repeatTimer = setTimeout(() => {
-                    repeatTimer = setInterval(() => {
-                        if (this.game.state === 'playing') {
-                            this.handleTouchControl(control);
-                        }
-                    }, this.repeatRate);
-                }, this.repeatDelay);
-            };
-            
-            const stopRepeat = () => {
-                if (repeatTimer) {
-                    clearTimeout(repeatTimer);
-                    clearInterval(repeatTimer);
-                    repeatTimer = null;
-                }
-            };
-            
-            if (['left', 'right', 'down'].includes(btn.dataset.control)) {
-                btn.addEventListener('touchstart', () => startRepeat(btn.dataset.control), { passive: true });
-                btn.addEventListener('touchend', stopRepeat, { passive: true });
-                btn.addEventListener('touchcancel', stopRepeat, { passive: true });
-            }
-        });
+        // Get the game area for touch handling
+        const gameArea = document.querySelector('.game-area');
+        const canvas = document.getElementById('game-canvas');
         
-        // Swipe controls on game canvas
+        // Use game area or canvas for touch events
+        const touchTarget = gameArea || canvas;
+        
+        if (touchTarget) {
+            touchTarget.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+            touchTarget.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+            touchTarget.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+            touchTarget.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+        }
+        
+        // Update cell size when renderer updates
+        this.updateCellSize();
+        window.addEventListener('resize', () => this.updateCellSize());
+    }
+    
+    /**
+     * Update cell size from renderer
+     */
+    updateCellSize() {
         const canvas = document.getElementById('game-canvas');
         if (canvas) {
-            canvas.addEventListener('touchstart', (e) => this.handleCanvasTouchStart(e), { passive: true });
-            canvas.addEventListener('touchend', (e) => this.handleCanvasTouchEnd(e), { passive: true });
+            this.cellSize = canvas.width / 10; // 10 columns
         }
     }
     
     /**
-     * Handle touch control button press
+     * Handle touch start
      */
-    handleTouchControl(control) {
+    handleTouchStart(e) {
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        this.touchId = touch.identifier;
+        this.touchStartX = touch.clientX;
+        this.touchStartY = touch.clientY;
+        this.lastTouchX = touch.clientX;
+        this.lastTouchY = touch.clientY;
+        this.touchStartTime = Date.now();
+        this.dragAccumulatorX = 0;
+        this.dragAccumulatorY = 0;
+        
+        // Prevent scrolling
+        e.preventDefault();
+    }
+    
+    /**
+     * Handle touch move - continuous drag for piece movement
+     */
+    handleTouchMove(e) {
         if (!this.enabled || this.game.state !== 'playing') return;
         
-        switch (control) {
-            case 'left':
-                this.game.moveLeft();
+        // Find our tracked touch
+        let touch = null;
+        for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].identifier === this.touchId) {
+                touch = e.touches[i];
                 break;
-            case 'right':
-                this.game.moveRight();
-                break;
-            case 'down':
-                this.game.softDrop();
-                break;
-            case 'rotate':
-                this.game.rotate(1);
-                break;
-            case 'drop':
-                this.game.hardDrop();
-                break;
+            }
         }
+        if (!touch) return;
+        
+        const deltaX = touch.clientX - this.lastTouchX;
+        const deltaY = touch.clientY - this.lastTouchY;
+        
+        // Accumulate drag distance
+        this.dragAccumulatorX += deltaX;
+        this.dragAccumulatorY += deltaY;
+        
+        // Move piece when accumulated drag exceeds threshold (based on cell size)
+        const moveThreshold = this.cellSize * 0.6; // 60% of cell size feels good
+        
+        // Horizontal movement
+        while (this.dragAccumulatorX >= moveThreshold) {
+            this.game.moveRight();
+            this.dragAccumulatorX -= moveThreshold;
+        }
+        while (this.dragAccumulatorX <= -moveThreshold) {
+            this.game.moveLeft();
+            this.dragAccumulatorX += moveThreshold;
+        }
+        
+        // Vertical movement (soft drop on drag down)
+        const dropThreshold = this.cellSize * 0.5;
+        while (this.dragAccumulatorY >= dropThreshold) {
+            this.game.softDrop();
+            this.dragAccumulatorY -= dropThreshold;
+        }
+        // Reset upward accumulator (no move up)
+        if (this.dragAccumulatorY < 0) {
+            this.dragAccumulatorY = 0;
+        }
+        
+        this.lastTouchX = touch.clientX;
+        this.lastTouchY = touch.clientY;
+        
+        e.preventDefault();
     }
     
     /**
-     * Handle touch start on canvas
+     * Handle touch end - detect tap (rotate) or fast swipe (hard drop)
      */
-    handleCanvasTouchStart(e) {
-        if (e.touches.length === 1) {
-            this.touchStartX = e.touches[0].clientX;
-            this.touchStartY = e.touches[0].clientY;
-            this.touchStartTime = Date.now();
-        }
-    }
-    
-    /**
-     * Handle touch end on canvas (swipe gestures)
-     */
-    handleCanvasTouchEnd(e) {
+    handleTouchEnd(e) {
         if (!this.enabled || this.game.state !== 'playing') return;
         
-        const touch = e.changedTouches[0];
+        // Find the ended touch
+        let touch = null;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === this.touchId) {
+                touch = e.changedTouches[i];
+                break;
+            }
+        }
+        if (!touch) return;
+        
         const deltaX = touch.clientX - this.touchStartX;
         const deltaY = touch.clientY - this.touchStartY;
         const duration = Date.now() - this.touchStartTime;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        const absX = Math.abs(deltaX);
-        const absY = Math.abs(deltaY);
+        // Calculate velocity (pixels per ms)
+        const velocity = duration > 0 ? distance / duration : 0;
+        const velocityY = duration > 0 ? deltaY / duration : 0;
         
-        // Tap to rotate
-        if (absX < this.minSwipeDistance && absY < this.minSwipeDistance && duration < this.tapMaxDuration) {
+        // Tap to rotate (short duration, small movement)
+        if (duration < this.tapMaxDuration && distance < this.tapMaxDistance) {
             this.game.rotate(1);
+            e.preventDefault();
             return;
         }
         
-        // Swipe detection
-        if (absX > absY && absX >= this.minSwipeDistance) {
-            // Horizontal swipe
-            if (deltaX > 0) {
-                this.game.moveRight();
-            } else {
-                this.game.moveLeft();
-            }
-        } else if (absY >= this.minSwipeDistance) {
-            // Vertical swipe
-            if (deltaY > 0) {
-                this.game.softDrop();
-            } else {
-                this.game.hardDrop();
-            }
+        // Fast swipe down = hard drop
+        if (velocityY > this.swipeVelocityThreshold && deltaY > 50) {
+            this.game.hardDrop();
+            e.preventDefault();
+            return;
         }
+        
+        // Reset touch tracking
+        this.touchId = null;
+        e.preventDefault();
     }
     
     /**

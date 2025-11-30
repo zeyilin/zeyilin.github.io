@@ -67,7 +67,10 @@ class App {
             
             // Buttons
             menuBtn: document.getElementById('menu-btn'),
-            menuBtnMobile: document.getElementById('menu-btn-mobile')
+            menuBtnMobile: document.getElementById('menu-btn-mobile'),
+            
+            // Touch hint
+            touchHint: document.getElementById('touch-hint')
         };
     }
     
@@ -202,7 +205,26 @@ class App {
         this.showScreen('game');
         this.updateDisplay();
         this.updatePauseOverlay();
+        this.showTouchHint();
         this.gameLoop();
+    }
+    
+    /**
+     * Show touch hint on mobile devices
+     */
+    showTouchHint() {
+        // Only show on touch devices and if not shown before this session
+        if (!this.elements.touchHint) return;
+        if (!('ontouchstart' in window)) return;
+        if (this.touchHintShown) return;
+        
+        this.touchHintShown = true;
+        this.elements.touchHint.classList.add('visible');
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            this.elements.touchHint.classList.remove('visible');
+        }, 3000);
     }
     
     /**
