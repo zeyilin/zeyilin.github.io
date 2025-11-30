@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0d0d0d">
+    <meta name="description" content="RETRIS - A classic Tetris clone for the browser">
+    <title>RETRIS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Container -->
+        <div class="game-container">
+            <!-- Game Area (Left Panel) -->
+            <main class="game-area">
+                <!-- Screen: Menu -->
+                <section id="screen-menu" class="screen active">
+                    <div class="menu-box">
+                        <div class="menu-logo">
+                            <h1 class="logo">RETRIS</h1>
+                        </div>
+                        <nav class="menu-items">
+                            <button class="menu-item" data-action="new-game">new game</button>
+                            <button class="menu-item" data-action="high-scores">high scores</button>
+                            <button class="menu-item" data-action="about">about</button>
+                        </nav>
+                        <div class="menu-decoration" aria-hidden="true">
+                            <div class="deco-row">
+                                <span class="deco-block cyan"></span>
+                                <span class="deco-block cyan"></span>
+                                <span class="deco-block yellow"></span>
+                                <span class="deco-block yellow"></span>
+                            </div>
+                            <div class="deco-row">
+                                <span class="deco-block purple"></span>
+                                <span class="deco-block purple"></span>
+                                <span class="deco-block green"></span>
+                                <span class="deco-block red"></span>
+                            </div>
+                            <div class="deco-row">
+                                <span class="deco-block red"></span>
+                                <span class="deco-block blue"></span>
+                                <span class="deco-block blue"></span>
+                                <span class="deco-block orange"></span>
+                                <span class="deco-block orange"></span>
+                                <span class="deco-block cyan"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Screen: Gameplay -->
+                <section id="screen-game" class="screen">
+                    <div class="game-board-container">
+                        <canvas id="game-canvas"></canvas>
+                        <div id="pause-overlay" class="overlay hidden">
+                            <span>PAUSED</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Screen: Game Over -->
+                <section id="screen-gameover" class="screen">
+                    <div class="modal">
+                        <h2 class="modal-title">GAME OVER</h2>
+                        <p class="modal-score">Score: <span id="final-score">0</span></p>
+                        <form id="score-form" class="score-form">
+                            <label for="player-name">Enter your name:</label>
+                            <input type="text" id="player-name" name="name" maxlength="12" autocomplete="off" required>
+                            <button type="submit" class="btn btn-primary">SAVE SCORE</button>
+                        </form>
+                        <button class="btn btn-secondary" data-action="play-again">PLAY AGAIN</button>
+                        <button class="btn btn-outline" data-action="main-menu">MAIN MENU</button>
+                    </div>
+                </section>
+
+                <!-- Screen: High Scores -->
+                <section id="screen-highscores" class="screen">
+                    <div class="highscores-container">
+                        <h2 class="screen-title">HIGH SCORES</h2>
+                        <div class="scores-list" id="scores-list">
+                            <!-- Scores rendered dynamically -->
+                        </div>
+                        <div class="tabs">
+                            <button class="tab active" data-tab="local">LOCAL</button>
+                            <button class="tab" data-tab="global">GLOBAL</button>
+                        </div>
+                        <button class="btn btn-primary btn-back" data-action="main-menu">M E N U</button>
+                    </div>
+                </section>
+
+                <!-- Screen: About -->
+                <section id="screen-about" class="screen">
+                    <div class="about-content">
+                        <div class="about-icon">
+                            <div class="icon-row">
+                                <span class="icon-block cyan"></span>
+                                <span class="icon-block yellow"></span>
+                            </div>
+                            <div class="icon-row">
+                                <span class="icon-block purple"></span>
+                                <span class="icon-block green"></span>
+                            </div>
+                            <div class="icon-row">
+                                <span class="icon-block red"></span>
+                                <span class="icon-block blue"></span>
+                            </div>
+                        </div>
+                        <h2 class="about-title">RETRIS</h2>
+                        <p class="about-version">version 1.1</p>
+                        <p class="about-description">One of my favorite apps in the early iPhone App Store era was <a href="https://www.reddit.com/r/Tetris/comments/nfnnr/tris_greatest_tetris_clone_ever_for_iphone/" target="_blank" rel="noopener">Tris</a>. I wanted to create an homage to the game by hosting something similar here. Enjoy!</p>
+                        <div class="controls-info">
+                            <h3>Controls:</h3>
+                            <ul>
+                                <li><kbd>←</kbd> <kbd>→</kbd> Move piece</li>
+                                <li><kbd>↑</kbd> Rotate</li>
+                                <li><kbd>↓</kbd> Soft drop (+1 pt)</li>
+                                <li><kbd>Space</kbd> Hard drop (+2 pt/cell)</li>
+                                <li><kbd>P</kbd> Pause</li>
+                            </ul>
+                        </div>
+                        <div class="controls-info">
+                            <h3>Classic Scoring:</h3>
+                            <ul>
+                                <li>Single: 40 × level</li>
+                                <li>Double: 100 × level</li>
+                                <li>Triple: 300 × level</li>
+                                <li>Tetris: 1200 × level</li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-primary btn-back" data-action="main-menu">M E N U</button>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Sidebar (Right Panel - Desktop only) -->
+            <aside class="sidebar">
+                <div class="sidebar-logo">
+                    <h1 class="logo">RETRIS</h1>
+                </div>
+                
+                <div class="sidebar-content">
+                    <div class="info-display">
+                        <span class="info-label">LEVEL</span>
+                        <div class="info-value" id="level-display">1</div>
+                    </div>
+                    
+                    <div class="info-display">
+                        <span class="info-label">SCORE</span>
+                        <div class="info-value" id="score-display">0</div>
+                    </div>
+                    
+                    <div class="info-display info-display--large">
+                        <span class="info-label">NEXT PIECE</span>
+                        <div class="info-value next-piece-value">
+                            <canvas id="next-canvas" width="80" height="80"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-menu" id="menu-btn">M E N U</button>
+            </aside>
+        </div>
+
+        <!-- Mobile Header (visible on mobile only) -->
+        <header class="mobile-header">
+            <div class="mobile-stats">
+                <div class="mobile-stat">
+                    <span class="stat-label">L</span>
+                    <span class="stat-value" id="mobile-level">1</span>
+                </div>
+                <div class="mobile-stat">
+                    <span class="stat-label">S</span>
+                    <span class="stat-value" id="mobile-score">0</span>
+                </div>
+                <div class="mobile-stat">
+                    <span class="stat-label">N</span>
+                    <canvas id="next-canvas-mobile" width="48" height="28"></canvas>
+                </div>
+            </div>
+            <button class="btn btn-menu-mobile" id="menu-btn-mobile">MENU</button>
+        </header>
+
+        <!-- Mobile Controls (visible on mobile only) -->
+        <div class="mobile-controls">
+            <div class="mobile-controls-row">
+                <button class="touch-btn" data-control="left" aria-label="Move Left">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+                <button class="touch-btn" data-control="rotate" aria-label="Rotate">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                </button>
+                <button class="touch-btn" data-control="down" aria-label="Soft Drop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </button>
+                <button class="touch-btn" data-control="right" aria-label="Move Right">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+            </div>
+            <button class="touch-btn touch-btn--wide" data-control="drop" aria-label="Hard Drop">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+                </svg>
+                DROP
+            </button>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/tetromino.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+

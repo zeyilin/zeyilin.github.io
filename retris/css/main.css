@@ -1,0 +1,140 @@
+/* main.css - CSS Variables and Base Styles */
+
+:root {
+    /* Colors */
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #1a1a1a;
+    --bg-grid: #232323;
+    --grid-line: #2a2a2a;
+    
+    /* Metal gradient colors */
+    --metal-light: #8a8a8a;
+    --metal-mid: #707070;
+    --metal-dark: #5a5a5a;
+    --metal-shadow: #3a3a3a;
+    
+    /* Text colors */
+    --text-primary: #ffffff;
+    --text-secondary: #aaaaaa;
+    --text-muted: #666666;
+    
+    /* Block Colors with glow */
+    --block-cyan: #00d4d4;
+    --block-yellow: #d4a800;
+    --block-purple: #8833cc;
+    --block-green: #00cc44;
+    --block-red: #cc3333;
+    --block-blue: #3366cc;
+    --block-orange: #cc6600;
+    
+    /* Accent */
+    --accent-glow: rgba(255, 255, 255, 0.1);
+    
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+    
+    /* Typography */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    
+    /* Sizing */
+    --cell-size: 28px;
+    --cell-size-tablet: 24px;
+    --cell-size-mobile: 30px;
+    
+    --sidebar-width: 270px;
+    --sidebar-width-tablet: 200px;
+    
+    /* Borders */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-container: 12px;
+    --radius-button: 20px;
+    --radius-block: 2px;
+    --radius-inset: 6px;
+    
+    /* Shadows */
+    --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    --shadow-block-highlight: inset 1px 1px 0 rgba(255, 255, 255, 0.3);
+    --shadow-block-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.3);
+    --shadow-container-glow: 0 0 20px rgba(255, 255, 255, 0.05);
+    
+    /* Transitions */
+    --transition-fast: 100ms ease;
+    --transition-normal: 150ms ease;
+    --transition-slow: 200ms ease;
+}
+
+/* Reset */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    touch-action: manipulation;
+    line-height: 1.5;
+}
+
+#app {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+}
+
+input {
+    font-family: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* Typography */
+h1, h2, h3 {
+    font-weight: var(--font-weight-light);
+    letter-spacing: 4px;
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+/* Selection */
+::selection {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
