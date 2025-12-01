@@ -204,24 +204,27 @@ class App {
      * Setup menu and UI event listeners
      */
     setupMenuListeners() {
-        // Action buttons (data-action attribute) - SIMPLE and RELIABLE
+        // Action buttons (data-action attribute) - Works on both desktop and mobile
         document.querySelectorAll('[data-action]').forEach(btn => {
             const handleAction = () => {
                 this.handleAction(btn.dataset.action);
             };
             
-            // Use touchstart with capture: true so it fires FIRST, before preventZoom
-            btn.addEventListener('touchstart', (e) => {
-                e.stopPropagation(); // Prevent from reaching document-level handlers
-                e.preventDefault(); // Prevent any default behavior
-                handleAction();
-            }, { passive: false, capture: true });
-            
-            // Also support click for desktop
+            // Click handler for desktop (always works)
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 handleAction();
             });
+            
+            // Touch handler for mobile (only if touch is supported)
+            if ('ontouchstart' in window) {
+                btn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation(); // Prevent from reaching document-level handlers
+                    e.preventDefault(); // Prevent any default behavior
+                    handleAction();
+                }, { passive: false, capture: true });
+            }
         });
         
         // Menu buttons
@@ -230,17 +233,21 @@ class App {
                 this.handleMenuPress();
             };
             
-            // Use touchstart with capture: true so it fires FIRST
-            this.elements.menuBtn.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                handleMenu();
-            }, { passive: false, capture: true });
-            
+            // Click handler for desktop
             this.elements.menuBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 handleMenu();
             });
+            
+            // Touch handler for mobile (only if touch is supported)
+            if ('ontouchstart' in window) {
+                this.elements.menuBtn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleMenu();
+                }, { passive: false, capture: true });
+            }
         }
         
         // Score form submission
@@ -462,29 +469,55 @@ class App {
      */
     setupResponsive() {
         const updateCellSize = debounce(() => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            let cellSize;
+            const gameArea = document.querySelector('.game-area');
+            const gameBoardContainer = document.querySelector('.game-board-container');
+            const sidebar = document.querySelector('.sidebar');
             
-            if (width <= 768) {
-                // Mobile: fit to available height considering header and controls
-                const availableHeight = height - 150; // Rough estimate for header + controls
-                const availableWidth = width - 20;
-                
-                const cellByHeight = Math.floor(availableHeight / 20);
-                const cellByWidth = Math.floor(availableWidth / 10);
-                
-                cellSize = Math.min(cellByHeight, cellByWidth, 32);
-                cellSize = Math.max(cellSize, 20); // Minimum size
-            } else if (width <= 1024) {
-                // Tablet
-                cellSize = 24;
-            } else {
-                // Desktop
-                cellSize = 28;
+            if (!gameArea || !gameBoardContainer) {
+                setTimeout(updateCellSize, 100);
+                return;
             }
             
-            if (this.renderer) {
+            // Get actual available space
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
+            const gameContainer = document.querySelector('.game-container');
+            const containerPadding = gameContainer ? 
+                (parseInt(getComputedStyle(gameContainer).paddingLeft) || 0) * 2 : 0;
+            const gap = gameContainer ? 
+                (parseInt(getComputedStyle(gameContainer).gap) || 0) : 0;
+            
+            // Calculate available space for game board
+            const availableWidth = gameAreaRect.width - (containerPadding + gap);
+            const availableHeight = gameAreaRect.height;
+            
+            // Board dimensions: 10 columns, 20 rows
+            const boardWidth = 10;
+            const boardHeight = 20;
+            
+            // Calculate cell size based on available space
+            const cellByWidth = Math.floor(availableWidth / boardWidth);
+            const cellByHeight = Math.floor(availableHeight / boardHeight);
+            
+            // Use the smaller dimension to ensure board fits
+            let cellSize = Math.min(cellByWidth, cellByHeight);
+            
+            // Apply constraints
+            if (window.innerWidth <= 768) {
+                // Mobile: ensure minimum playability
+                cellSize = Math.max(cellSize, 20);
+                cellSize = Math.min(cellSize, 35); // Max size for mobile
+            } else if (window.innerWidth <= 1024) {
+                // Tablet
+                cellSize = Math.max(cellSize, 22);
+                cellSize = Math.min(cellSize, 30);
+            } else {
+                // Desktop: maximize size
+                cellSize = Math.max(cellSize, 24);
+                cellSize = Math.min(cellSize, 40);
+            }
+            
+            if (this.renderer && cellSize > 0) {
                 this.renderer.setCellSize(cellSize);
                 // Re-render if game is active
                 if (this.game.state === 'playing' || this.game.state === 'paused') {
@@ -494,6 +527,12 @@ class App {
         }, 100);
         
         window.addEventListener('resize', updateCellSize);
+        // Also update when game starts
+        const originalStartGame = this.startGame.bind(this);
+        this.startGame = () => {
+            originalStartGame();
+            setTimeout(updateCellSize, 50);
+        };
         updateCellSize();
     }
 }

@@ -3,12 +3,14 @@
 .game-container {
     display: flex;
     flex: 1;
-    max-width: 900px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     width: 100%;
     height: 100%;
     gap: var(--space-md);
     padding: var(--space-md);
+    min-height: 0;
+    overflow: hidden;
 }
 
 .game-area {
@@ -18,7 +20,9 @@
     justify-content: center;
     position: relative;
     min-height: 0;
+    min-width: 0;
     background-color: var(--bg-primary);
+    overflow: hidden;
 }
 
 /* Sidebar */
@@ -88,6 +92,11 @@
 
 /* Tablet */
 @media (max-width: 1024px) {
+    .game-container {
+        max-width: 100%;
+        padding: var(--space-sm);
+    }
+    
     .sidebar {
         width: var(--sidebar-width-tablet);
         padding: var(--space-md);
@@ -108,9 +117,10 @@
         flex-direction: row;
         height: 100%;
         flex: 1;
-        padding: var(--space-sm);
-        gap: var(--space-sm);
+        padding: var(--space-xs);
+        gap: var(--space-xs);
         min-height: 0;
+        max-width: 100%;
     }
     
     /* Keep sidebar on mobile but make it compact */
@@ -209,7 +219,7 @@
     }
 }
 
-/* Minimum supported screen - 320px */
+/* Minimum supported screen - 320px width, 500px height */
 .screen-too-small {
     display: none;
     position: fixed;
@@ -239,7 +249,7 @@
     color: var(--text-secondary);
 }
 
-@media (max-width: 320px) {
+@media (max-width: 320px), (max-height: 500px) {
     .screen-too-small {
         display: flex;
     }

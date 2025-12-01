@@ -15,6 +15,9 @@
     pointer-events: auto;
     /* Ensure game board respects safe areas on mobile browsers */
     margin-bottom: env(safe-area-inset-bottom, 0px);
+    /* Make container fit content exactly */
+    display: inline-block;
+    flex-shrink: 0;
 }
 
 #game-canvas {

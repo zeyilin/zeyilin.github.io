@@ -27,27 +27,37 @@ class ProfanityFilter {
             'retard', 'retarded', 'retards',
             'gay', 'gays', // Context-dependent, but filtering for safety
             'lesbian', 'lesbians',
-            // Variations with numbers/leetspeak
-            'f*ck', 'f**k', 'f***', 'f4ck', 'fuck1ng',
-            'sh1t', 'sh*t', 's**t',
+            // Variations with numbers/leetspeak (removed * variations - they cause regex issues)
+            'f4ck', 'fuck1ng',
+            'sh1t',
             'a$$', 'a55', '4ss',
-            'b1tch', 'b*tch', 'b**ch',
-            'd1ck', 'd*ck', 'd**k',
+            'b1tch',
+            'd1ck',
         ];
         
         // Create regex patterns for word boundaries
         this.patterns = this.badWords.map(word => {
-            // Match word with word boundaries, case insensitive
-            // Also match common leetspeak substitutions
-            const leetWord = word
-                .replace(/a/gi, '[a4@]')
-                .replace(/e/gi, '[e3]')
-                .replace(/i/gi, '[i1!]')
-                .replace(/o/gi, '[o0]')
-                .replace(/s/gi, '[s5$]')
-                .replace(/t/gi, '[t7]')
-                .replace(/l/gi, '[l1]');
-            return new RegExp(`\\b${leetWord}\\b`, 'gi');
+            // Escape special regex characters first (including * which causes issues)
+            let escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            // Apply leetspeak substitutions - need to handle escaped characters
+            // Replace escaped letters with character classes
+            escapedWord = escapedWord
+                .replace(/\\a/gi, '[a4@]')
+                .replace(/\\e/gi, '[e3]')
+                .replace(/\\i/gi, '[i1!]')
+                .replace(/\\o/gi, '[o0]')
+                .replace(/\\s/gi, '[s5$]')
+                .replace(/\\t/gi, '[t7]')
+                .replace(/\\l/gi, '[l1]');
+            
+            try {
+                return new RegExp(`\\b${escapedWord}\\b`, 'gi');
+            } catch (e) {
+                // If regex creation fails, use a simple escaped version
+                const simpleEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return new RegExp(`\\b${simpleEscaped}\\b`, 'gi');
+            }
         });
     }
     
