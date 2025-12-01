@@ -185,13 +185,13 @@
         letter-spacing: 1px;
     }
     
-    /* Show mobile header and controls on mobile */
+    /* Show mobile header on mobile, but hide control buttons (gesture-based only) */
     .mobile-header {
         display: flex;
     }
     
     .mobile-controls {
-        display: flex;
+        display: none;
     }
     
     .game-area {
