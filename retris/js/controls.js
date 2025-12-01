@@ -171,31 +171,18 @@ class Controls {
     setupTouchControls() {
         // Wait for DOM to be ready, then setup touch handlers
         const setupTouchHandlers = () => {
-            // Per Apple docs: Touch events are delivered to the element that received the original touchstart event
-            // We need to attach to the canvas element specifically for proper event delivery
+            // Get all possible touch targets
             const canvas = document.getElementById('game-canvas');
             const gameBoardContainer = document.querySelector('.game-board-container');
+            const gameArea = document.querySelector('.game-area');
             
-            // Primary target: canvas (where the game is rendered)
-            // Fallback: game board container
-            const primaryTarget = canvas || gameBoardContainer;
+            // Attach to multiple targets for better coverage
+            const touchTargets = [canvas, gameBoardContainer, gameArea].filter(Boolean);
             
-            if (!primaryTarget) {
-                // Retry if canvas isn't ready yet
+            if (touchTargets.length === 0) {
+                // Retry if elements aren't ready yet
                 setTimeout(setupTouchHandlers, 100);
                 return;
-            }
-            
-            // Remove any existing listeners to avoid duplicates
-            if (this.boundTouchStart) {
-                primaryTarget.removeEventListener('touchstart', this.boundTouchStart);
-            }
-            if (this.boundTouchMove) {
-                primaryTarget.removeEventListener('touchmove', this.boundTouchMove);
-            }
-            if (this.boundTouchEnd) {
-                primaryTarget.removeEventListener('touchend', this.boundTouchEnd);
-                primaryTarget.removeEventListener('touchcancel', this.boundTouchEnd);
             }
             
             // Bind handlers to preserve 'this' context
@@ -208,14 +195,25 @@ class Controls {
             // This is required for iOS 2.0 and later to prevent scrolling/zooming
             const options = { passive: false };
             
-            // Register handlers per Apple documentation pattern
-            primaryTarget.addEventListener('touchstart', this.boundTouchStart, options);
-            primaryTarget.addEventListener('touchmove', this.boundTouchMove, options);
-            primaryTarget.addEventListener('touchend', this.boundTouchEnd, options);
-            primaryTarget.addEventListener('touchcancel', this.boundTouchEnd, options);
-            
-            // Mark as setup
-            primaryTarget.setAttribute('data-touch-setup', 'true');
+            // Attach handlers to all touch targets
+            touchTargets.forEach(target => {
+                // Remove any existing listeners to avoid duplicates
+                if (target.hasAttribute('data-touch-setup')) {
+                    target.removeEventListener('touchstart', this.boundTouchStart);
+                    target.removeEventListener('touchmove', this.boundTouchMove);
+                    target.removeEventListener('touchend', this.boundTouchEnd);
+                    target.removeEventListener('touchcancel', this.boundTouchEnd);
+                }
+                
+                // Register handlers per Apple documentation pattern
+                target.addEventListener('touchstart', this.boundTouchStart, options);
+                target.addEventListener('touchmove', this.boundTouchMove, options);
+                target.addEventListener('touchend', this.boundTouchEnd, options);
+                target.addEventListener('touchcancel', this.boundTouchEnd, options);
+                
+                // Mark as setup
+                target.setAttribute('data-touch-setup', 'true');
+            });
         };
         
         // Setup immediately if DOM is ready, otherwise wait
