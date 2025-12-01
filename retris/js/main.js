@@ -34,51 +34,76 @@ class App {
      * Prevent zoom gestures on mobile
      */
     preventZoom() {
-        // Prevent double-tap zoom - but allow single taps on buttons
+        // Track touches to prevent double-tap zoom
         let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            // Don't prevent default on buttons/inputs
-            const target = e.target;
-            const isInteractive = target.tagName === 'BUTTON' || 
-                                 target.tagName === 'INPUT' ||
-                                 target.closest('button') !== null ||
-                                 target.closest('input') !== null ||
-                                 target.closest('[data-action]') !== null;
-            
-            if (!isInteractive) {
-                const now = Date.now();
-                if (now - lastTouchEnd <= 300) {
-                    e.preventDefault();
-                }
-                lastTouchEnd = now;
-            }
-        }, { passive: false });
+        let touchStartTime = 0;
         
-        // Prevent pinch zoom - but allow single finger touches
-        document.addEventListener('touchmove', (e) => {
-            // Don't prevent on buttons
+        // Prevent double-tap zoom - ONLY on non-interactive elements
+        document.addEventListener('touchend', (e) => {
             const target = e.target;
-            const isInteractive = target.tagName === 'BUTTON' || 
-                                 target.closest('button') !== null ||
-                                 target.closest('[data-action]') !== null;
+            const isButton = target.tagName === 'BUTTON' || 
+                           target.closest('button') !== null ||
+                           target.closest('[data-action]') !== null ||
+                           target.closest('[data-control]') !== null ||
+                           target.tagName === 'INPUT' ||
+                           target.closest('input') !== null ||
+                           target.closest('form') !== null;
             
-            if (!isInteractive && e.touches.length > 1) {
+            // NEVER prevent default on buttons - let them work normally
+            if (isButton) {
+                return;
+            }
+            
+            // Only prevent double-tap on non-interactive areas
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300 && now - touchStartTime < 500) {
                 e.preventDefault();
             }
-        }, { passive: false });
+            lastTouchEnd = now;
+        }, { passive: false, capture: false });
         
-        // Prevent gesturestart (pinch zoom on iOS)
+        // Track touch start time
+        document.addEventListener('touchstart', (e) => {
+            const target = e.target;
+            const isButton = target.tagName === 'BUTTON' || 
+                           target.closest('button') !== null ||
+                           target.closest('[data-action]') !== null;
+            
+            if (!isButton) {
+                touchStartTime = Date.now();
+            }
+        }, { passive: true });
+        
+        // Prevent pinch zoom - ONLY on non-interactive elements
+        document.addEventListener('touchmove', (e) => {
+            const target = e.target;
+            const isButton = target.tagName === 'BUTTON' || 
+                           target.closest('button') !== null ||
+                           target.closest('[data-action]') !== null;
+            
+            // NEVER prevent on buttons
+            if (isButton) {
+                return;
+            }
+            
+            // Only prevent multi-touch (pinch) on non-interactive areas
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false, capture: false });
+        
+        // Prevent gesture events (pinch zoom on iOS)
         document.addEventListener('gesturestart', (e) => {
             e.preventDefault();
-        });
+        }, { passive: false });
         
         document.addEventListener('gesturechange', (e) => {
             e.preventDefault();
-        });
+        }, { passive: false });
         
         document.addEventListener('gestureend', (e) => {
             e.preventDefault();
-        });
+        }, { passive: false });
     }
     
     /**
@@ -179,18 +204,18 @@ class App {
      * Setup menu and UI event listeners
      */
     setupMenuListeners() {
-        // Action buttons (data-action attribute) - Works on iOS
+        // Action buttons (data-action attribute) - SIMPLE and RELIABLE
         document.querySelectorAll('[data-action]').forEach(btn => {
             const handleAction = () => {
                 this.handleAction(btn.dataset.action);
             };
             
-            // Use touchend for reliable iOS response
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            // Use touchstart with capture: true so it fires FIRST, before preventZoom
+            btn.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // Prevent from reaching document-level handlers
+                e.preventDefault(); // Prevent any default behavior
                 handleAction();
-            }, { passive: false });
+            }, { passive: false, capture: true });
             
             // Also support click for desktop
             btn.addEventListener('click', (e) => {
@@ -204,11 +229,14 @@ class App {
             const handleMenu = () => {
                 this.handleMenuPress();
             };
-            this.elements.menuBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
+            
+            // Use touchstart with capture: true so it fires FIRST
+            this.elements.menuBtn.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 handleMenu();
-            }, { passive: false });
+            }, { passive: false, capture: true });
+            
             this.elements.menuBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 handleMenu();
