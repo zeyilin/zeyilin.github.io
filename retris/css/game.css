@@ -6,11 +6,19 @@
     border: 2px solid #333;
     border-radius: var(--radius-container);
     overflow: hidden;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 #game-canvas {
     display: block;
     background-color: var(--bg-grid);
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Overlay */

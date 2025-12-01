@@ -33,14 +33,8 @@ class App {
      * Check if this is first visit and show instructions
      */
     checkFirstVisit() {
-        if (!this.storage.hasSeenInstructions()) {
-            // Show instructions first with device-specific content
-            this.showInstructions();
-            this.storage.markInstructionsShown();
-        } else {
-            // Show menu
-            this.showScreen('menu');
-        }
+        // Always show menu - instructions are now in about page
+        this.showScreen('menu');
     }
     
     /**
@@ -66,7 +60,6 @@ class App {
                 game: document.getElementById('screen-game'),
                 gameover: document.getElementById('screen-gameover'),
                 highscores: document.getElementById('screen-highscores'),
-                instructions: document.getElementById('screen-instructions'),
                 about: document.getElementById('screen-about')
             },
             
@@ -200,9 +193,6 @@ class App {
                 this.showScreen('highscores');
                 this.renderHighScores('local');
                 break;
-            case 'instructions':
-                this.showInstructions();
-                break;
             case 'about':
                 this.showScreen('about');
                 break;
@@ -213,15 +203,6 @@ class App {
                 this.showScreen('menu');
                 break;
         }
-    }
-    
-    /**
-     * Show instructions screen with device-specific content
-     */
-    showInstructions() {
-        this.showScreen('instructions');
-        // The CSS media queries will handle showing/hiding the appropriate sections
-        // This ensures the correct instructions are visible based on screen size
     }
     
     /**

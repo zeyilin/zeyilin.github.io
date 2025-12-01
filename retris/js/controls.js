@@ -170,38 +170,65 @@ class Controls {
     setupTouchControls() {
         // Wait for DOM to be ready, then setup touch handlers
         const setupTouchHandlers = () => {
-            // Get the game area for touch handling
+            // Get the game area and canvas for touch handling
             const gameArea = document.querySelector('.game-area');
             const canvas = document.getElementById('game-canvas');
             
-            // Prefer canvas, fallback to game area
-            const touchTarget = canvas || gameArea;
+            // Safari mobile needs both canvas and game area to have touch handlers
+            // Also attach to game board container for better coverage
+            const gameBoardContainer = document.querySelector('.game-board-container');
             
-            if (touchTarget) {
+            const touchTargets = [canvas, gameArea, gameBoardContainer].filter(Boolean);
+            
+            touchTargets.forEach(touchTarget => {
+                if (!touchTarget) return;
+                
                 // Remove any existing listeners to avoid duplicates
-                touchTarget.removeEventListener('touchstart', this.boundTouchStart);
-                touchTarget.removeEventListener('touchmove', this.boundTouchMove);
-                touchTarget.removeEventListener('touchend', this.boundTouchEnd);
-                touchTarget.removeEventListener('touchcancel', this.boundTouchEnd);
+                if (this.boundTouchStart) {
+                    touchTarget.removeEventListener('touchstart', this.boundTouchStart);
+                }
+                if (this.boundTouchMove) {
+                    touchTarget.removeEventListener('touchmove', this.boundTouchMove);
+                }
+                if (this.boundTouchEnd) {
+                    touchTarget.removeEventListener('touchend', this.boundTouchEnd);
+                    touchTarget.removeEventListener('touchcancel', this.boundTouchEnd);
+                }
                 
                 // Bind handlers to preserve 'this' context
                 this.boundTouchStart = (e) => this.handleTouchStart(e);
                 this.boundTouchMove = (e) => this.handleTouchMove(e);
                 this.boundTouchEnd = (e) => this.handleTouchEnd(e);
                 
-                touchTarget.addEventListener('touchstart', this.boundTouchStart, { passive: false });
-                touchTarget.addEventListener('touchmove', this.boundTouchMove, { passive: false });
-                touchTarget.addEventListener('touchend', this.boundTouchEnd, { passive: false });
-                touchTarget.addEventListener('touchcancel', this.boundTouchEnd, { passive: false });
-            }
+                // Non-passive listeners required for preventDefault across all browsers
+                // This works on Chrome, Firefox, Safari, Edge, and other mobile browsers
+                const options = { passive: false, capture: false };
+                
+                touchTarget.addEventListener('touchstart', this.boundTouchStart, options);
+                touchTarget.addEventListener('touchmove', this.boundTouchMove, options);
+                touchTarget.addEventListener('touchend', this.boundTouchEnd, options);
+                touchTarget.addEventListener('touchcancel', this.boundTouchEnd, options);
+            });
         };
         
         // Setup immediately if DOM is ready, otherwise wait
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupTouchHandlers);
         } else {
-            setupTouchHandlers();
+            // Use setTimeout to ensure canvas is fully initialized
+            // This delay helps with all browsers, especially on slower devices
+            setTimeout(setupTouchHandlers, 100);
         }
+        
+        // Also try to setup after a short delay as fallback for edge cases
+        // This ensures touch handlers are attached even if canvas isn't ready initially
+        setTimeout(() => {
+            const canvas = document.getElementById('game-canvas');
+            if (canvas && !canvas.hasAttribute('data-touch-setup')) {
+                setupTouchHandlers();
+                canvas.setAttribute('data-touch-setup', 'true');
+            }
+        }, 500);
         
         // Also setup mobile control buttons as backup
         this.setupMobileButtons();
@@ -219,13 +246,22 @@ class Controls {
         const buttons = document.querySelectorAll('[data-control]');
         
         buttons.forEach(button => {
-            // Use both click and touchstart for better mobile support
-            button.addEventListener('click', (e) => {
+            // Use touchstart and touchend for maximum cross-browser compatibility
+            // Works on Chrome, Firefox, Safari, Edge, and other mobile browsers
+            const handleTouch = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 this.handleMobileButton(button.dataset.control);
-            });
+            };
             
-            button.addEventListener('touchstart', (e) => {
+            button.addEventListener('touchstart', handleTouch, { passive: false });
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, { passive: false });
+            
+            // Also support click for desktop testing
+            button.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.handleMobileButton(button.dataset.control);
             });
@@ -283,8 +319,10 @@ class Controls {
         this.dragAccumulatorX = 0;
         this.dragAccumulatorY = 0;
         
-        // Prevent scrolling - always prevent on game canvas/area
+        // Prevent scrolling - Safari requires this to be called synchronously
+        // and the listener must be non-passive
         e.preventDefault();
+        e.stopPropagation();
     }
     
     /**

@@ -36,7 +36,6 @@
                         <nav class="menu-items">
                             <button class="menu-item" data-action="new-game">new game</button>
                             <button class="menu-item" data-action="high-scores">high scores</button>
-                            <button class="menu-item" data-action="instructions">instructions</button>
                             <button class="menu-item" data-action="about">about</button>
                         </nav>
                         <div class="menu-decoration" aria-hidden="true">
@@ -110,106 +109,6 @@
                     </div>
                 </section>
 
-                <!-- Screen: Instructions -->
-                <section id="screen-instructions" class="screen">
-                    <div class="instructions-content">
-                        <h2 class="instructions-title">HOW TO PLAY</h2>
-                        
-                        <!-- Desktop Instructions -->
-                        <div class="instructions-section instructions-desktop">
-                            <h3>Keyboard Controls</h3>
-                            <div class="controls-list">
-                                <div class="control-item">
-                                    <div class="control-keys">
-                                        <kbd>←</kbd> <kbd>→</kbd>
-                                    </div>
-                                    <span class="control-desc">Move piece left/right</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-keys">
-                                        <kbd>↑</kbd>
-                                    </div>
-                                    <span class="control-desc">Rotate piece</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-keys">
-                                        <kbd>↓</kbd>
-                                    </div>
-                                    <span class="control-desc">Soft drop (+1 pt per cell)</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-keys">
-                                        <kbd>Space</kbd>
-                                    </div>
-                                    <span class="control-desc">Hard drop (+2 pts per cell)</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-keys">
-                                        <kbd>P</kbd>
-                                    </div>
-                                    <span class="control-desc">Pause/Resume</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Mobile Instructions -->
-                        <div class="instructions-section instructions-mobile">
-                            <h3>Touch Controls</h3>
-                            <div class="controls-list">
-                                <div class="control-item">
-                                    <div class="control-icon">↔️</div>
-                                    <span class="control-desc">Drag left/right to move</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-icon">👆</div>
-                                    <span class="control-desc">Tap to rotate</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-icon">⬇️</div>
-                                    <span class="control-desc">Drag down to soft drop</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-icon">⚡</div>
-                                    <span class="control-desc">Swipe fast down to hard drop</span>
-                                </div>
-                                <div class="control-item">
-                                    <div class="control-icon">🎮</div>
-                                    <span class="control-desc">Or use the control buttons below</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="instructions-section">
-                            <h3>Scoring</h3>
-                            <div class="scoring-list">
-                                <div class="score-item">
-                                    <span class="score-label">Single line:</span>
-                                    <span class="score-value">40 × level</span>
-                                </div>
-                                <div class="score-item">
-                                    <span class="score-label">Double lines:</span>
-                                    <span class="score-value">100 × level</span>
-                                </div>
-                                <div class="score-item">
-                                    <span class="score-label">Triple lines:</span>
-                                    <span class="score-value">300 × level</span>
-                                </div>
-                                <div class="score-item">
-                                    <span class="score-label">Tetris (4 lines):</span>
-                                    <span class="score-value">1200 × level</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="instructions-section">
-                            <h3>Objective</h3>
-                            <p class="instructions-text">Clear horizontal lines by filling them with blocks. The game speeds up as you level up. Try to achieve the highest score possible!</p>
-                        </div>
-                        
-                        <button class="btn btn-primary btn-back" data-action="main-menu">D O N E</button>
-                    </div>
-                </section>
-
                 <!-- Screen: About -->
                 <section id="screen-about" class="screen">
                     <div class="about-content">
@@ -238,6 +137,13 @@
                                 <li><kbd>↓</kbd> Soft drop (+1 pt)</li>
                                 <li><kbd>Space</kbd> Hard drop (+2 pt/cell)</li>
                                 <li><kbd>P</kbd> Pause</li>
+                            </ul>
+                            <ul class="mobile-controls-list">
+                                <li>↔️ Drag left/right to move</li>
+                                <li>👆 Tap to rotate</li>
+                                <li>⬇️ Drag down to soft drop</li>
+                                <li>⚡ Swipe fast down to hard drop</li>
+                                <li>🎮 Or use the control buttons</li>
                             </ul>
                         </div>
                         <div class="controls-info">
