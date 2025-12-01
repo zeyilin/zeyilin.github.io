@@ -169,59 +169,122 @@ class Controls {
      * Based on Apple Safari documentation: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html
      */
     setupTouchControls() {
-        // Wait for DOM to be ready, then setup touch handlers
-        const setupTouchHandlers = () => {
-            // Get all possible touch targets
-            const canvas = document.getElementById('game-canvas');
-            const gameBoardContainer = document.querySelector('.game-board-container');
-            const gameArea = document.querySelector('.game-area');
-            
-            // Attach to multiple targets for better coverage
-            const touchTargets = [canvas, gameBoardContainer, gameArea].filter(Boolean);
-            
-            if (touchTargets.length === 0) {
-                // Retry if elements aren't ready yet
-                setTimeout(setupTouchHandlers, 100);
-                return;
-            }
-            
-            // Bind handlers to preserve 'this' context
-            // Per Apple docs: preventDefault() must be called to prevent default Safari behavior
+        // Bind handlers once to preserve 'this' context and avoid recreation issues
+        // Per Apple docs: preventDefault() must be called to prevent default Safari behavior
+        if (!this.boundTouchStart) {
             this.boundTouchStart = (e) => this.handleTouchStart(e);
             this.boundTouchMove = (e) => this.handleTouchMove(e);
             this.boundTouchEnd = (e) => this.handleTouchEnd(e);
+            this.boundTouchCancel = (e) => this.handleTouchEnd(e);
+        }
+        
+        // Per Apple docs: Use non-passive listeners to allow preventDefault()
+        // This is required for iOS 2.0 and later to prevent scrolling/zooming
+        const options = { passive: false, capture: false };
+        
+        // Wait for DOM to be ready, then setup touch handlers
+        const setupTouchHandlers = () => {
+            // Get all possible touch targets - prioritize canvas
+            const canvas = document.getElementById('game-canvas');
+            const gameBoardContainer = document.querySelector('.game-board-container');
+            const gameArea = document.querySelector('.game-area');
+            const screenGame = document.getElementById('screen-game');
             
-            // Per Apple docs: Use non-passive listeners to allow preventDefault()
-            // This is required for iOS 2.0 and later to prevent scrolling/zooming
-            const options = { passive: false };
+            // Attach to multiple targets for better coverage on iPhone
+            // Canvas is primary, but container and area provide fallback
+            const touchTargets = [canvas, gameBoardContainer, gameArea, screenGame].filter(Boolean);
+            
+            if (touchTargets.length === 0) {
+                // Retry if elements aren't ready yet
+                setTimeout(setupTouchHandlers, 50);
+                return;
+            }
             
             // Attach handlers to all touch targets
             touchTargets.forEach(target => {
-                // Remove any existing listeners to avoid duplicates
+                // Skip if already setup (avoid duplicate listeners)
                 if (target.hasAttribute('data-touch-setup')) {
-                    target.removeEventListener('touchstart', this.boundTouchStart);
-                    target.removeEventListener('touchmove', this.boundTouchMove);
-                    target.removeEventListener('touchend', this.boundTouchEnd);
-                    target.removeEventListener('touchcancel', this.boundTouchEnd);
+                    return;
                 }
                 
                 // Register handlers per Apple documentation pattern
+                // Using capture: false but ensuring preventDefault works
                 target.addEventListener('touchstart', this.boundTouchStart, options);
                 target.addEventListener('touchmove', this.boundTouchMove, options);
                 target.addEventListener('touchend', this.boundTouchEnd, options);
-                target.addEventListener('touchcancel', this.boundTouchEnd, options);
+                target.addEventListener('touchcancel', this.boundTouchCancel, options);
                 
                 // Mark as setup
                 target.setAttribute('data-touch-setup', 'true');
             });
+            
+            // Also attach to document as ultimate fallback for iPhone Safari quirks
+            // Only do this once
+            if (!document.hasAttribute('data-touch-setup')) {
+                // Bind handlers to preserve 'this' context
+                const self = this;
+                const documentTouchStart = (e) => {
+                    const canvas = document.getElementById('game-canvas');
+                    if (canvas && canvas.hasAttribute('data-touch-setup')) {
+                        const rect = canvas.getBoundingClientRect();
+                        const touch = e.touches?.[0];
+                        if (touch) {
+                            const x = touch.clientX;
+                            const y = touch.clientY;
+                            if (x >= rect.left && x <= rect.right && 
+                                y >= rect.top && y <= rect.bottom) {
+                                self.handleTouchStart(e);
+                            }
+                        }
+                    }
+                };
+                const documentTouchMove = (e) => {
+                    const canvas = document.getElementById('game-canvas');
+                    if (canvas && canvas.hasAttribute('data-touch-setup')) {
+                        const rect = canvas.getBoundingClientRect();
+                        const touch = e.touches?.[0];
+                        if (touch) {
+                            const x = touch.clientX;
+                            const y = touch.clientY;
+                            if (x >= rect.left && x <= rect.right && 
+                                y >= rect.top && y <= rect.bottom) {
+                                self.handleTouchMove(e);
+                            }
+                        }
+                    }
+                };
+                const documentTouchEnd = (e) => {
+                    const canvas = document.getElementById('game-canvas');
+                    if (canvas && canvas.hasAttribute('data-touch-setup')) {
+                        const rect = canvas.getBoundingClientRect();
+                        const touch = e.changedTouches?.[0];
+                        if (touch) {
+                            const x = touch.clientX;
+                            const y = touch.clientY;
+                            if (x >= rect.left && x <= rect.right && 
+                                y >= rect.top && y <= rect.bottom) {
+                                self.handleTouchEnd(e);
+                            }
+                        }
+                    }
+                };
+                
+                document.addEventListener('touchstart', documentTouchStart, options);
+                document.addEventListener('touchmove', documentTouchMove, options);
+                document.addEventListener('touchend', documentTouchEnd, options);
+                document.addEventListener('touchcancel', documentTouchEnd, options);
+                document.setAttribute('data-touch-setup', 'true');
+            }
         };
         
         // Setup immediately if DOM is ready, otherwise wait
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupTouchHandlers);
         } else {
-            // Use setTimeout to ensure canvas is fully initialized
-            setTimeout(setupTouchHandlers, 100);
+            // Use multiple attempts to ensure setup works on iPhone
+            setupTouchHandlers();
+            setTimeout(setupTouchHandlers, 50);
+            setTimeout(setupTouchHandlers, 200);
         }
         
         // Retry setup as fallback (in case canvas isn't ready)
@@ -231,6 +294,53 @@ class Controls {
                 setupTouchHandlers();
             }
         }, 500);
+        
+        // Retry one more time after a longer delay for slow-loading iPhones
+        setTimeout(setupTouchHandlers, 1000);
+        
+        // Also attach a global touch handler to window as ultimate fallback
+        // This catches touches even if element-specific handlers fail
+        if (!window.__retrisTouchSetup) {
+            const globalTouchHandler = (e) => {
+                // Only handle if touch is on game-related elements
+                const target = e.target;
+                const canvas = document.getElementById('game-canvas');
+                const gameArea = document.querySelector('.game-area');
+                const gameContainer = document.querySelector('.game-board-container');
+                
+                // Check if touch is within game area
+                if (canvas || gameArea || gameContainer) {
+                    const isGameElement = target === canvas || 
+                                         target === gameArea || 
+                                         target === gameContainer ||
+                                         canvas?.contains(target) ||
+                                         gameArea?.contains(target) ||
+                                         gameContainer?.contains(target);
+                    
+                    if (isGameElement) {
+                        // Prevent default to stop scrolling/zooming
+                        try {
+                            e.preventDefault();
+                        } catch (err) {}
+                        
+                        // Route to appropriate handler
+                        if (e.type === 'touchstart') {
+                            this.handleTouchStart(e);
+                        } else if (e.type === 'touchmove') {
+                            this.handleTouchMove(e);
+                        } else if (e.type === 'touchend' || e.type === 'touchcancel') {
+                            this.handleTouchEnd(e);
+                        }
+                    }
+                }
+            };
+            
+            window.addEventListener('touchstart', globalTouchHandler, { passive: false, capture: true });
+            window.addEventListener('touchmove', globalTouchHandler, { passive: false, capture: true });
+            window.addEventListener('touchend', globalTouchHandler, { passive: false, capture: true });
+            window.addEventListener('touchcancel', globalTouchHandler, { passive: false, capture: true });
+            window.__retrisTouchSetup = true;
+        }
         
         // Also setup mobile control buttons as backup
         this.setupMobileButtons();
@@ -300,24 +410,42 @@ class Controls {
      */
     updateCellSize() {
         const canvas = document.getElementById('game-canvas');
-        if (canvas) {
+        if (canvas && canvas.width > 0) {
             this.cellSize = canvas.width / 10; // 10 columns
+        } else {
+            // Fallback cell size if canvas not ready
+            this.cellSize = 28;
         }
     }
     
     /**
      * Handle touch start
      * Per Apple docs: preventDefault() must be called to prevent default Safari behavior
+     * CRITICAL: preventDefault() MUST be called FIRST, before any early returns
      */
     handleTouchStart(e) {
+        // CRITICAL FOR IPHONE: preventDefault() MUST be called synchronously
+        // before any early returns, otherwise Safari starts default touch behavior
+        try {
+            e.preventDefault();
+            e.stopPropagation();
+        } catch (err) {
+            // Ignore errors (might happen if event is already handled)
+        }
+        
+        // Only handle if game is playing or can be controlled
+        if (!this.enabled) return;
+        
         // Only handle single touch
-        if (e.touches.length !== 1) {
+        if (!e.touches || e.touches.length !== 1) {
             // If multiple touches, cancel any active touch
             this.touchId = null;
             return;
         }
         
         const touch = e.touches[0];
+        if (!touch) return;
+        
         this.touchId = touch.identifier;
         this.touchStartX = touch.clientX;
         this.touchStartY = touch.clientY;
@@ -326,11 +454,6 @@ class Controls {
         this.touchStartTime = Date.now();
         this.dragAccumulatorX = 0;
         this.dragAccumulatorY = 0;
-        
-        // Per Apple docs: preventDefault() prevents default Safari behavior (scrolling, zooming)
-        // Must be called synchronously in touchstart handler
-        e.preventDefault();
-        e.stopPropagation();
     }
     
     /**
@@ -339,19 +462,26 @@ class Controls {
      */
     handleTouchMove(e) {
         // Per Apple docs: preventDefault() must be called to prevent scrolling
-        e.preventDefault();
-        e.stopPropagation();
+        // This is critical for iPhone Safari
+        try {
+            e.preventDefault();
+            e.stopPropagation();
+        } catch (err) {
+            // Ignore errors
+        }
         
         if (!this.enabled || this.game.state !== 'playing') return;
-        if (!this.touchId) return;
+        if (this.touchId === null || this.touchId === undefined) return;
         
         // Per Apple docs: Use targetTouches to get touches for the target element
         // Find our tracked touch by identifier
         let touch = null;
-        for (let i = 0; i < e.touches.length; i++) {
-            if (e.touches[i].identifier === this.touchId) {
-                touch = e.touches[i];
-                break;
+        if (e.touches && e.touches.length > 0) {
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].identifier === this.touchId) {
+                    touch = e.touches[i];
+                    break;
+                }
             }
         }
         if (!touch) return;
@@ -364,7 +494,9 @@ class Controls {
         this.dragAccumulatorY += deltaY;
         
         // Move piece when accumulated drag exceeds threshold (based on cell size)
-        const moveThreshold = this.cellSize * 0.6; // 60% of cell size feels good
+        // Ensure cellSize is valid, fallback to 28 if not set
+        const effectiveCellSize = this.cellSize > 0 ? this.cellSize : 28;
+        const moveThreshold = effectiveCellSize * 0.6; // 60% of cell size feels good
         
         // Horizontal movement
         while (this.dragAccumulatorX >= moveThreshold) {
@@ -377,7 +509,7 @@ class Controls {
         }
         
         // Vertical movement (soft drop on drag down)
-        const dropThreshold = this.cellSize * 0.5;
+        const dropThreshold = effectiveCellSize * 0.5;
         while (this.dragAccumulatorY >= dropThreshold) {
             this.game.softDrop();
             this.dragAccumulatorY -= dropThreshold;
@@ -397,21 +529,34 @@ class Controls {
      */
     handleTouchEnd(e) {
         // Per Apple docs: preventDefault() prevents default behavior
-        e.preventDefault();
-        e.stopPropagation();
+        try {
+            e.preventDefault();
+            e.stopPropagation();
+        } catch (err) {
+            // Ignore errors
+        }
         
-        if (!this.enabled || this.game.state !== 'playing') return;
-        if (!this.touchId) return;
+        if (!this.enabled || this.game.state !== 'playing') {
+            this.touchId = null;
+            return;
+        }
+        
+        if (this.touchId === null || this.touchId === undefined) {
+            return;
+        }
         
         // Per Apple docs: Use changedTouches to get touches that ended
         // Find the ended touch by identifier
         let touch = null;
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === this.touchId) {
-                touch = e.changedTouches[i];
-                break;
+        if (e.changedTouches && e.changedTouches.length > 0) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === this.touchId) {
+                    touch = e.changedTouches[i];
+                    break;
+                }
             }
         }
+        
         if (!touch) {
             this.touchId = null;
             return;

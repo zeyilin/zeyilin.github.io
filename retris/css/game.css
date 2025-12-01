@@ -10,6 +10,9 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    /* iOS Safari touch handling */
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
     /* Ensure game board respects safe areas on mobile browsers */
     margin-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -21,6 +24,11 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    /* iOS Safari touch handling */
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    /* Prevent iOS Safari from intercepting touches */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Overlay */
@@ -40,6 +48,7 @@
 
 .overlay.hidden {
     display: none;
+    pointer-events: none; /* Ensure hidden overlay doesn't block touches */
 }
 
 /* Next piece canvas */

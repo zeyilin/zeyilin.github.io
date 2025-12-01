@@ -206,6 +206,13 @@ class App {
         this.updateDisplay();
         this.updatePauseOverlay();
         this.showTouchHint();
+        // Re-setup touch controls when game starts (for iPhone Safari)
+        if (this.controls && typeof this.controls.setupTouchControls === 'function') {
+            // Small delay to ensure canvas is rendered
+            setTimeout(() => {
+                this.controls.setupTouchControls();
+            }, 100);
+        }
         this.gameLoop();
     }
     
