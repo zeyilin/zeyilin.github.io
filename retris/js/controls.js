@@ -166,49 +166,56 @@ class Controls {
     
     /**
      * Setup touch controls - gesture-based for mobile
+     * Based on Apple Safari documentation: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html
      */
     setupTouchControls() {
         // Wait for DOM to be ready, then setup touch handlers
         const setupTouchHandlers = () => {
-            // Get the game area and canvas for touch handling
-            const gameArea = document.querySelector('.game-area');
+            // Per Apple docs: Touch events are delivered to the element that received the original touchstart event
+            // We need to attach to the canvas element specifically for proper event delivery
             const canvas = document.getElementById('game-canvas');
-            
-            // Safari mobile needs both canvas and game area to have touch handlers
-            // Also attach to game board container for better coverage
             const gameBoardContainer = document.querySelector('.game-board-container');
             
-            const touchTargets = [canvas, gameArea, gameBoardContainer].filter(Boolean);
+            // Primary target: canvas (where the game is rendered)
+            // Fallback: game board container
+            const primaryTarget = canvas || gameBoardContainer;
             
-            touchTargets.forEach(touchTarget => {
-                if (!touchTarget) return;
-                
-                // Remove any existing listeners to avoid duplicates
-                if (this.boundTouchStart) {
-                    touchTarget.removeEventListener('touchstart', this.boundTouchStart);
-                }
-                if (this.boundTouchMove) {
-                    touchTarget.removeEventListener('touchmove', this.boundTouchMove);
-                }
-                if (this.boundTouchEnd) {
-                    touchTarget.removeEventListener('touchend', this.boundTouchEnd);
-                    touchTarget.removeEventListener('touchcancel', this.boundTouchEnd);
-                }
-                
-                // Bind handlers to preserve 'this' context
-                this.boundTouchStart = (e) => this.handleTouchStart(e);
-                this.boundTouchMove = (e) => this.handleTouchMove(e);
-                this.boundTouchEnd = (e) => this.handleTouchEnd(e);
-                
-                // Non-passive listeners required for preventDefault across all browsers
-                // This works on Chrome, Firefox, Safari, Edge, and other mobile browsers
-                const options = { passive: false, capture: false };
-                
-                touchTarget.addEventListener('touchstart', this.boundTouchStart, options);
-                touchTarget.addEventListener('touchmove', this.boundTouchMove, options);
-                touchTarget.addEventListener('touchend', this.boundTouchEnd, options);
-                touchTarget.addEventListener('touchcancel', this.boundTouchEnd, options);
-            });
+            if (!primaryTarget) {
+                // Retry if canvas isn't ready yet
+                setTimeout(setupTouchHandlers, 100);
+                return;
+            }
+            
+            // Remove any existing listeners to avoid duplicates
+            if (this.boundTouchStart) {
+                primaryTarget.removeEventListener('touchstart', this.boundTouchStart);
+            }
+            if (this.boundTouchMove) {
+                primaryTarget.removeEventListener('touchmove', this.boundTouchMove);
+            }
+            if (this.boundTouchEnd) {
+                primaryTarget.removeEventListener('touchend', this.boundTouchEnd);
+                primaryTarget.removeEventListener('touchcancel', this.boundTouchEnd);
+            }
+            
+            // Bind handlers to preserve 'this' context
+            // Per Apple docs: preventDefault() must be called to prevent default Safari behavior
+            this.boundTouchStart = (e) => this.handleTouchStart(e);
+            this.boundTouchMove = (e) => this.handleTouchMove(e);
+            this.boundTouchEnd = (e) => this.handleTouchEnd(e);
+            
+            // Per Apple docs: Use non-passive listeners to allow preventDefault()
+            // This is required for iOS 2.0 and later to prevent scrolling/zooming
+            const options = { passive: false };
+            
+            // Register handlers per Apple documentation pattern
+            primaryTarget.addEventListener('touchstart', this.boundTouchStart, options);
+            primaryTarget.addEventListener('touchmove', this.boundTouchMove, options);
+            primaryTarget.addEventListener('touchend', this.boundTouchEnd, options);
+            primaryTarget.addEventListener('touchcancel', this.boundTouchEnd, options);
+            
+            // Mark as setup
+            primaryTarget.setAttribute('data-touch-setup', 'true');
         };
         
         // Setup immediately if DOM is ready, otherwise wait
@@ -216,17 +223,14 @@ class Controls {
             document.addEventListener('DOMContentLoaded', setupTouchHandlers);
         } else {
             // Use setTimeout to ensure canvas is fully initialized
-            // This delay helps with all browsers, especially on slower devices
             setTimeout(setupTouchHandlers, 100);
         }
         
-        // Also try to setup after a short delay as fallback for edge cases
-        // This ensures touch handlers are attached even if canvas isn't ready initially
+        // Retry setup as fallback (in case canvas isn't ready)
         setTimeout(() => {
             const canvas = document.getElementById('game-canvas');
             if (canvas && !canvas.hasAttribute('data-touch-setup')) {
                 setupTouchHandlers();
-                canvas.setAttribute('data-touch-setup', 'true');
             }
         }, 500);
         
@@ -305,9 +309,15 @@ class Controls {
     
     /**
      * Handle touch start
+     * Per Apple docs: preventDefault() must be called to prevent default Safari behavior
      */
     handleTouchStart(e) {
-        if (e.touches.length !== 1) return;
+        // Only handle single touch
+        if (e.touches.length !== 1) {
+            // If multiple touches, cancel any active touch
+            this.touchId = null;
+            return;
+        }
         
         const touch = e.touches[0];
         this.touchId = touch.identifier;
@@ -319,19 +329,26 @@ class Controls {
         this.dragAccumulatorX = 0;
         this.dragAccumulatorY = 0;
         
-        // Prevent scrolling - Safari requires this to be called synchronously
-        // and the listener must be non-passive
+        // Per Apple docs: preventDefault() prevents default Safari behavior (scrolling, zooming)
+        // Must be called synchronously in touchstart handler
         e.preventDefault();
         e.stopPropagation();
     }
     
     /**
      * Handle touch move - continuous drag for piece movement
+     * Per Apple docs: preventDefault() in touchmove prevents scrolling
      */
     handleTouchMove(e) {
-        if (!this.enabled || this.game.state !== 'playing') return;
+        // Per Apple docs: preventDefault() must be called to prevent scrolling
+        e.preventDefault();
+        e.stopPropagation();
         
-        // Find our tracked touch
+        if (!this.enabled || this.game.state !== 'playing') return;
+        if (!this.touchId) return;
+        
+        // Per Apple docs: Use targetTouches to get touches for the target element
+        // Find our tracked touch by identifier
         let touch = null;
         for (let i = 0; i < e.touches.length; i++) {
             if (e.touches[i].identifier === this.touchId) {
@@ -374,17 +391,22 @@ class Controls {
         
         this.lastTouchX = touch.clientX;
         this.lastTouchY = touch.clientY;
-        
-        e.preventDefault();
     }
     
     /**
      * Handle touch end - detect tap (rotate) or fast swipe (hard drop)
+     * Per Apple docs: Use changedTouches to get touches that changed in this event
      */
     handleTouchEnd(e) {
-        if (!this.enabled || this.game.state !== 'playing') return;
+        // Per Apple docs: preventDefault() prevents default behavior
+        e.preventDefault();
+        e.stopPropagation();
         
-        // Find the ended touch
+        if (!this.enabled || this.game.state !== 'playing') return;
+        if (!this.touchId) return;
+        
+        // Per Apple docs: Use changedTouches to get touches that ended
+        // Find the ended touch by identifier
         let touch = null;
         for (let i = 0; i < e.changedTouches.length; i++) {
             if (e.changedTouches[i].identifier === this.touchId) {
@@ -392,7 +414,10 @@ class Controls {
                 break;
             }
         }
-        if (!touch) return;
+        if (!touch) {
+            this.touchId = null;
+            return;
+        }
         
         const deltaX = touch.clientX - this.touchStartX;
         const deltaY = touch.clientY - this.touchStartY;
@@ -406,20 +431,19 @@ class Controls {
         // Tap to rotate (short duration, small movement)
         if (duration < this.tapMaxDuration && distance < this.tapMaxDistance) {
             this.game.rotate(1);
-            e.preventDefault();
+            this.touchId = null;
             return;
         }
         
         // Fast swipe down = hard drop
         if (velocityY > this.swipeVelocityThreshold && deltaY > 50) {
             this.game.hardDrop();
-            e.preventDefault();
+            this.touchId = null;
             return;
         }
         
         // Reset touch tracking
         this.touchId = null;
-        e.preventDefault();
     }
     
     /**
