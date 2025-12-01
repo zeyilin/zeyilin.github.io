@@ -208,11 +208,12 @@ class Controls {
                 }
                 
                 // Register handlers per Apple documentation pattern
-                // Using capture: false but ensuring preventDefault works
-                target.addEventListener('touchstart', this.boundTouchStart, options);
-                target.addEventListener('touchmove', this.boundTouchMove, options);
-                target.addEventListener('touchend', this.boundTouchEnd, options);
-                target.addEventListener('touchcancel', this.boundTouchCancel, options);
+                // Use capture: false to avoid interfering with buttons
+                // But still use passive: false to allow preventDefault
+                target.addEventListener('touchstart', this.boundTouchStart, { passive: false, capture: false });
+                target.addEventListener('touchmove', this.boundTouchMove, { passive: false, capture: false });
+                target.addEventListener('touchend', this.boundTouchEnd, { passive: false, capture: false });
+                target.addEventListener('touchcancel', this.boundTouchCancel, { passive: false, capture: false });
                 
                 // Mark as setup
                 target.setAttribute('data-touch-setup', 'true');
@@ -300,24 +301,18 @@ class Controls {
         
         // Also attach a global touch handler to window as ultimate fallback
         // This catches touches even if element-specific handlers fail
+        // BUT: Only for the canvas itself, not buttons or menu items
         if (!window.__retrisTouchSetup) {
+            const self = this;
             const globalTouchHandler = (e) => {
-                // Only handle if touch is on game-related elements
                 const target = e.target;
                 const canvas = document.getElementById('game-canvas');
-                const gameArea = document.querySelector('.game-area');
-                const gameContainer = document.querySelector('.game-board-container');
                 
-                // Check if touch is within game area
-                if (canvas || gameArea || gameContainer) {
-                    const isGameElement = target === canvas || 
-                                         target === gameArea || 
-                                         target === gameContainer ||
-                                         canvas?.contains(target) ||
-                                         gameArea?.contains(target) ||
-                                         gameContainer?.contains(target);
-                    
-                    if (isGameElement) {
+                // ONLY handle touches directly on the canvas element
+                // Don't interfere with buttons, menu items, or other UI elements
+                if (canvas && (target === canvas || target.closest('#game-canvas') === canvas)) {
+                    // Only handle if game is actually playing
+                    if (self.game && self.game.state === 'playing') {
                         // Prevent default to stop scrolling/zooming
                         try {
                             e.preventDefault();
@@ -325,21 +320,18 @@ class Controls {
                         
                         // Route to appropriate handler
                         if (e.type === 'touchstart') {
-                            this.handleTouchStart(e);
+                            self.handleTouchStart(e);
                         } else if (e.type === 'touchmove') {
-                            this.handleTouchMove(e);
+                            self.handleTouchMove(e);
                         } else if (e.type === 'touchend' || e.type === 'touchcancel') {
-                            this.handleTouchEnd(e);
+                            self.handleTouchEnd(e);
                         }
                     }
                 }
             };
             
-            window.addEventListener('touchstart', globalTouchHandler, { passive: false, capture: true });
-            window.addEventListener('touchmove', globalTouchHandler, { passive: false, capture: true });
-            window.addEventListener('touchend', globalTouchHandler, { passive: false, capture: true });
-            window.addEventListener('touchcancel', globalTouchHandler, { passive: false, capture: true });
-            window.__retrisTouchSetup = true;
+            // REMOVED - global handler was blocking menu buttons
+            // Element-specific handlers on canvas should be sufficient
         }
         
         // Also setup mobile control buttons as backup
@@ -424,6 +416,19 @@ class Controls {
      * CRITICAL: preventDefault() MUST be called FIRST, before any early returns
      */
     handleTouchStart(e) {
+        // Check if this is a button or menu item FIRST - if so, don't handle at all
+        const target = e.target;
+        const isButton = target.tagName === 'BUTTON' || 
+                        target.closest('button') !== null ||
+                        target.closest('[data-action]') !== null ||
+                        target.closest('[data-control]') !== null ||
+                        target.closest('.mobile-header') !== null ||
+                        target.closest('form') !== null ||
+                        target.closest('input') !== null;
+        
+        // Don't handle if it's a button or form element - let it work normally
+        if (isButton) return;
+        
         // CRITICAL FOR IPHONE: preventDefault() MUST be called synchronously
         // before any early returns, otherwise Safari starts default touch behavior
         try {

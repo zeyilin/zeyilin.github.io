@@ -187,9 +187,9 @@
         letter-spacing: 1px;
     }
     
-    /* Hide mobile header and controls on mobile (gesture-based only) */
+    /* Show mobile header on mobile */
     .mobile-header {
-        display: none;
+        display: flex;
     }
     
     .mobile-controls {

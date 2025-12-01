@@ -134,22 +134,42 @@ class App {
     setupMenuListeners() {
         // Action buttons (data-action attribute)
         document.querySelectorAll('[data-action]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            const handleAction = () => {
                 this.handleAction(btn.dataset.action);
-            });
+            };
+            
+            // Add both click and touch handlers for iOS compatibility
+            btn.addEventListener('click', handleAction);
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAction();
+            }, { passive: false });
         });
         
         // Menu buttons
         if (this.elements.menuBtn) {
-            this.elements.menuBtn.addEventListener('click', () => {
+            const handleMenu = () => {
                 this.handleMenuPress();
-            });
+            };
+            this.elements.menuBtn.addEventListener('click', handleMenu);
+            this.elements.menuBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleMenu();
+            }, { passive: false });
         }
         
         if (this.elements.menuBtnMobile) {
-            this.elements.menuBtnMobile.addEventListener('click', () => {
+            const handleMenu = () => {
                 this.handleMenuPress();
-            });
+            };
+            this.elements.menuBtnMobile.addEventListener('click', handleMenu);
+            this.elements.menuBtnMobile.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleMenu();
+            }, { passive: false });
         }
         
         // Score form submission
