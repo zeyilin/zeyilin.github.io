@@ -169,8 +169,7 @@ class Controls {
      * Based on Apple Safari documentation: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/HandlingEvents/HandlingEvents.html
      */
     setupTouchControls() {
-        // Bind handlers once to preserve 'this' context and avoid recreation issues
-        // Per Apple docs: preventDefault() must be called to prevent default Safari behavior
+        // Bind handlers once to preserve 'this' context
         if (!this.boundTouchStart) {
             this.boundTouchStart = (e) => this.handleTouchStart(e);
             this.boundTouchMove = (e) => this.handleTouchMove(e);
@@ -178,166 +177,42 @@ class Controls {
             this.boundTouchCancel = (e) => this.handleTouchEnd(e);
         }
         
-        // Per Apple docs: Use non-passive listeners to allow preventDefault()
-        // This is required for iOS 2.0 and later to prevent scrolling/zooming
-        const options = { passive: false, capture: false };
-        
-        // Wait for DOM to be ready, then setup touch handlers
-        const setupTouchHandlers = () => {
-            // Get all possible touch targets - prioritize canvas
+        // SIMPLIFIED: Only attach to canvas element, nothing else
+        // This prevents interference with buttons
+        const setupCanvasTouch = () => {
             const canvas = document.getElementById('game-canvas');
-            const gameBoardContainer = document.querySelector('.game-board-container');
-            const gameArea = document.querySelector('.game-area');
-            const screenGame = document.getElementById('screen-game');
-            
-            // Attach to multiple targets for better coverage on iPhone
-            // Canvas is primary, but container and area provide fallback
-            const touchTargets = [canvas, gameBoardContainer, gameArea, screenGame].filter(Boolean);
-            
-            if (touchTargets.length === 0) {
-                // Retry if elements aren't ready yet
-                setTimeout(setupTouchHandlers, 50);
+            if (!canvas) {
+                setTimeout(setupCanvasTouch, 100);
                 return;
             }
             
-            // Attach handlers to all touch targets
-            touchTargets.forEach(target => {
-                // Skip if already setup (avoid duplicate listeners)
-                if (target.hasAttribute('data-touch-setup')) {
-                    return;
-                }
-                
-                // Register handlers per Apple documentation pattern
-                // Use capture: false to avoid interfering with buttons
-                // But still use passive: false to allow preventDefault
-                target.addEventListener('touchstart', this.boundTouchStart, { passive: false, capture: false });
-                target.addEventListener('touchmove', this.boundTouchMove, { passive: false, capture: false });
-                target.addEventListener('touchend', this.boundTouchEnd, { passive: false, capture: false });
-                target.addEventListener('touchcancel', this.boundTouchCancel, { passive: false, capture: false });
-                
-                // Mark as setup
-                target.setAttribute('data-touch-setup', 'true');
-            });
-            
-            // Also attach to document as ultimate fallback for iPhone Safari quirks
-            // Only do this once
-            if (!document.hasAttribute('data-touch-setup')) {
-                // Bind handlers to preserve 'this' context
-                const self = this;
-                const documentTouchStart = (e) => {
-                    const canvas = document.getElementById('game-canvas');
-                    if (canvas && canvas.hasAttribute('data-touch-setup')) {
-                        const rect = canvas.getBoundingClientRect();
-                        const touch = e.touches?.[0];
-                        if (touch) {
-                            const x = touch.clientX;
-                            const y = touch.clientY;
-                            if (x >= rect.left && x <= rect.right && 
-                                y >= rect.top && y <= rect.bottom) {
-                                self.handleTouchStart(e);
-                            }
-                        }
-                    }
-                };
-                const documentTouchMove = (e) => {
-                    const canvas = document.getElementById('game-canvas');
-                    if (canvas && canvas.hasAttribute('data-touch-setup')) {
-                        const rect = canvas.getBoundingClientRect();
-                        const touch = e.touches?.[0];
-                        if (touch) {
-                            const x = touch.clientX;
-                            const y = touch.clientY;
-                            if (x >= rect.left && x <= rect.right && 
-                                y >= rect.top && y <= rect.bottom) {
-                                self.handleTouchMove(e);
-                            }
-                        }
-                    }
-                };
-                const documentTouchEnd = (e) => {
-                    const canvas = document.getElementById('game-canvas');
-                    if (canvas && canvas.hasAttribute('data-touch-setup')) {
-                        const rect = canvas.getBoundingClientRect();
-                        const touch = e.changedTouches?.[0];
-                        if (touch) {
-                            const x = touch.clientX;
-                            const y = touch.clientY;
-                            if (x >= rect.left && x <= rect.right && 
-                                y >= rect.top && y <= rect.bottom) {
-                                self.handleTouchEnd(e);
-                            }
-                        }
-                    }
-                };
-                
-                document.addEventListener('touchstart', documentTouchStart, options);
-                document.addEventListener('touchmove', documentTouchMove, options);
-                document.addEventListener('touchend', documentTouchEnd, options);
-                document.addEventListener('touchcancel', documentTouchEnd, options);
-                document.setAttribute('data-touch-setup', 'true');
+            // Skip if already setup
+            if (canvas.hasAttribute('data-touch-setup')) {
+                return;
             }
+            
+            // ONLY attach to canvas, use passive: false for preventDefault
+            canvas.addEventListener('touchstart', this.boundTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', this.boundTouchMove, { passive: false });
+            canvas.addEventListener('touchend', this.boundTouchEnd, { passive: false });
+            canvas.addEventListener('touchcancel', this.boundTouchCancel, { passive: false });
+            
+            canvas.setAttribute('data-touch-setup', 'true');
         };
         
-        // Setup immediately if DOM is ready, otherwise wait
+        // Setup when ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupTouchHandlers);
+            document.addEventListener('DOMContentLoaded', setupCanvasTouch);
         } else {
-            // Use multiple attempts to ensure setup works on iPhone
-            setupTouchHandlers();
-            setTimeout(setupTouchHandlers, 50);
-            setTimeout(setupTouchHandlers, 200);
+            setupCanvasTouch();
+            setTimeout(setupCanvasTouch, 200);
+            setTimeout(setupCanvasTouch, 500);
         }
         
-        // Retry setup as fallback (in case canvas isn't ready)
-        setTimeout(() => {
-            const canvas = document.getElementById('game-canvas');
-            if (canvas && !canvas.hasAttribute('data-touch-setup')) {
-                setupTouchHandlers();
-            }
-        }, 500);
-        
-        // Retry one more time after a longer delay for slow-loading iPhones
-        setTimeout(setupTouchHandlers, 1000);
-        
-        // Also attach a global touch handler to window as ultimate fallback
-        // This catches touches even if element-specific handlers fail
-        // BUT: Only for the canvas itself, not buttons or menu items
-        if (!window.__retrisTouchSetup) {
-            const self = this;
-            const globalTouchHandler = (e) => {
-                const target = e.target;
-                const canvas = document.getElementById('game-canvas');
-                
-                // ONLY handle touches directly on the canvas element
-                // Don't interfere with buttons, menu items, or other UI elements
-                if (canvas && (target === canvas || target.closest('#game-canvas') === canvas)) {
-                    // Only handle if game is actually playing
-                    if (self.game && self.game.state === 'playing') {
-                        // Prevent default to stop scrolling/zooming
-                        try {
-                            e.preventDefault();
-                        } catch (err) {}
-                        
-                        // Route to appropriate handler
-                        if (e.type === 'touchstart') {
-                            self.handleTouchStart(e);
-                        } else if (e.type === 'touchmove') {
-                            self.handleTouchMove(e);
-                        } else if (e.type === 'touchend' || e.type === 'touchcancel') {
-                            self.handleTouchEnd(e);
-                        }
-                    }
-                }
-            };
-            
-            // REMOVED - global handler was blocking menu buttons
-            // Element-specific handlers on canvas should be sufficient
-        }
-        
-        // Also setup mobile control buttons as backup
+        // Setup mobile control buttons
         this.setupMobileButtons();
         
-        // Update cell size when renderer updates
+        // Update cell size
         this.updateCellSize();
         window.addEventListener('resize', () => this.updateCellSize());
     }
@@ -416,30 +291,17 @@ class Controls {
      * CRITICAL: preventDefault() MUST be called FIRST, before any early returns
      */
     handleTouchStart(e) {
-        // Check if this is a button or menu item FIRST - if so, don't handle at all
-        const target = e.target;
-        const isButton = target.tagName === 'BUTTON' || 
-                        target.closest('button') !== null ||
-                        target.closest('[data-action]') !== null ||
-                        target.closest('[data-control]') !== null ||
-                        target.closest('.mobile-header') !== null ||
-                        target.closest('form') !== null ||
-                        target.closest('input') !== null;
-        
-        // Don't handle if it's a button or form element - let it work normally
-        if (isButton) return;
-        
+        // Since we only attach to canvas, we can safely preventDefault
         // CRITICAL FOR IPHONE: preventDefault() MUST be called synchronously
-        // before any early returns, otherwise Safari starts default touch behavior
         try {
             e.preventDefault();
             e.stopPropagation();
         } catch (err) {
-            // Ignore errors (might happen if event is already handled)
+            // Ignore errors
         }
         
-        // Only handle if game is playing or can be controlled
-        if (!this.enabled) return;
+        // Only handle if game is playing
+        if (!this.enabled || this.game.state !== 'playing') return;
         
         // Only handle single touch
         if (!e.touches || e.touches.length !== 1) {

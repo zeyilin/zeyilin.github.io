@@ -132,19 +132,21 @@ class App {
      * Setup menu and UI event listeners
      */
     setupMenuListeners() {
-        // Action buttons (data-action attribute)
+        // Action buttons (data-action attribute) - SIMPLIFIED for iOS
         document.querySelectorAll('[data-action]').forEach(btn => {
             const handleAction = () => {
                 this.handleAction(btn.dataset.action);
             };
             
-            // Add both click and touch handlers for iOS compatibility
-            btn.addEventListener('click', handleAction);
-            btn.addEventListener('touchend', (e) => {
+            // Use touchstart for immediate response on iOS
+            btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleAction();
             }, { passive: false });
+            
+            // Also support click for desktop
+            btn.addEventListener('click', handleAction);
         });
         
         // Menu buttons
@@ -152,24 +154,24 @@ class App {
             const handleMenu = () => {
                 this.handleMenuPress();
             };
-            this.elements.menuBtn.addEventListener('click', handleMenu);
-            this.elements.menuBtn.addEventListener('touchend', (e) => {
+            this.elements.menuBtn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleMenu();
             }, { passive: false });
+            this.elements.menuBtn.addEventListener('click', handleMenu);
         }
         
         if (this.elements.menuBtnMobile) {
             const handleMenu = () => {
                 this.handleMenuPress();
             };
-            this.elements.menuBtnMobile.addEventListener('click', handleMenu);
-            this.elements.menuBtnMobile.addEventListener('touchend', (e) => {
+            this.elements.menuBtnMobile.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleMenu();
             }, { passive: false });
+            this.elements.menuBtnMobile.addEventListener('click', handleMenu);
         }
         
         // Score form submission

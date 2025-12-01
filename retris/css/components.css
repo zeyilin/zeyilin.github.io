@@ -155,6 +155,11 @@
     text-align: center;
     text-transform: lowercase;
     transition: all var(--transition-normal);
+    /* Ensure buttons are tappable on iOS */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 @media (min-width: 768px) {

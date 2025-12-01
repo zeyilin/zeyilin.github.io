@@ -117,6 +117,10 @@ button {
     border: none;
     background: none;
     color: inherit;
+    /* Ensure all buttons work on iOS */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
 }
 
 input {
