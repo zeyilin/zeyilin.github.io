@@ -27,8 +27,8 @@
     /* iOS Safari touch handling */
     -webkit-tap-highlight-color: transparent;
     pointer-events: auto;
-    /* Prevent iOS Safari from intercepting touches */
-    -webkit-overflow-scrolling: touch;
+    /* Prevent pinch zoom on canvas */
+    -ms-touch-action: none;
 }
 
 /* Overlay */

@@ -24,9 +24,61 @@ class App {
         this.setupGameCallbacks();
         this.setupMenuListeners();
         this.setupResponsive();
+        this.preventZoom();
         
         // Check if instructions should be shown on first visit
         this.checkFirstVisit();
+    }
+    
+    /**
+     * Prevent zoom gestures on mobile
+     */
+    preventZoom() {
+        // Prevent double-tap zoom - but allow single taps on buttons
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            // Don't prevent default on buttons/inputs
+            const target = e.target;
+            const isInteractive = target.tagName === 'BUTTON' || 
+                                 target.tagName === 'INPUT' ||
+                                 target.closest('button') !== null ||
+                                 target.closest('input') !== null ||
+                                 target.closest('[data-action]') !== null;
+            
+            if (!isInteractive) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                }
+                lastTouchEnd = now;
+            }
+        }, { passive: false });
+        
+        // Prevent pinch zoom - but allow single finger touches
+        document.addEventListener('touchmove', (e) => {
+            // Don't prevent on buttons
+            const target = e.target;
+            const isInteractive = target.tagName === 'BUTTON' || 
+                                 target.closest('button') !== null ||
+                                 target.closest('[data-action]') !== null;
+            
+            if (!isInteractive && e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Prevent gesturestart (pinch zoom on iOS)
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gesturechange', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gestureend', (e) => {
+            e.preventDefault();
+        });
     }
     
     /**
@@ -45,13 +97,10 @@ class App {
             // Canvases
             gameCanvas: document.getElementById('game-canvas'),
             nextCanvas: document.getElementById('next-canvas'),
-            nextCanvasMobile: document.getElementById('next-canvas-mobile'),
             
             // Displays
             levelDisplay: document.getElementById('level-display'),
             scoreDisplay: document.getElementById('score-display'),
-            mobileLevelDisplay: document.getElementById('mobile-level'),
-            mobileScoreDisplay: document.getElementById('mobile-score'),
             finalScoreDisplay: document.getElementById('final-score'),
             
             // Screens
@@ -75,7 +124,6 @@ class App {
             
             // Buttons
             menuBtn: document.getElementById('menu-btn'),
-            menuBtnMobile: document.getElementById('menu-btn-mobile'),
             
             // Touch hint
             touchHint: document.getElementById('touch-hint')
@@ -88,8 +136,7 @@ class App {
     setupRenderer() {
         this.renderer = new Renderer(
             this.elements.gameCanvas,
-            this.elements.nextCanvas,
-            this.elements.nextCanvasMobile
+            this.elements.nextCanvas
         );
     }
     
@@ -132,21 +179,24 @@ class App {
      * Setup menu and UI event listeners
      */
     setupMenuListeners() {
-        // Action buttons (data-action attribute) - SIMPLIFIED for iOS
+        // Action buttons (data-action attribute) - Works on iOS
         document.querySelectorAll('[data-action]').forEach(btn => {
             const handleAction = () => {
                 this.handleAction(btn.dataset.action);
             };
             
-            // Use touchstart for immediate response on iOS
-            btn.addEventListener('touchstart', (e) => {
+            // Use touchend for reliable iOS response
+            btn.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleAction();
             }, { passive: false });
             
             // Also support click for desktop
-            btn.addEventListener('click', handleAction);
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleAction();
+            });
         });
         
         // Menu buttons
@@ -154,24 +204,15 @@ class App {
             const handleMenu = () => {
                 this.handleMenuPress();
             };
-            this.elements.menuBtn.addEventListener('touchstart', (e) => {
+            this.elements.menuBtn.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleMenu();
             }, { passive: false });
-            this.elements.menuBtn.addEventListener('click', handleMenu);
-        }
-        
-        if (this.elements.menuBtnMobile) {
-            const handleMenu = () => {
-                this.handleMenuPress();
-            };
-            this.elements.menuBtnMobile.addEventListener('touchstart', (e) => {
+            this.elements.menuBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 handleMenu();
-            }, { passive: false });
-            this.elements.menuBtnMobile.addEventListener('click', handleMenu);
+            });
         }
         
         // Score form submission
@@ -334,14 +375,6 @@ class App {
         }
         if (this.elements.scoreDisplay) {
             this.elements.scoreDisplay.textContent = score;
-        }
-        
-        // Mobile displays
-        if (this.elements.mobileLevelDisplay) {
-            this.elements.mobileLevelDisplay.textContent = level;
-        }
-        if (this.elements.mobileScoreDisplay) {
-            this.elements.mobileScoreDisplay.textContent = score;
         }
     }
     
