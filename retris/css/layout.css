@@ -185,9 +185,9 @@
         letter-spacing: 1px;
     }
     
-    /* Show mobile header on mobile, but hide control buttons (gesture-based only) */
+    /* Hide mobile header and controls on mobile (gesture-based only) */
     .mobile-header {
-        display: flex;
+        display: none;
     }
     
     .mobile-controls {
@@ -199,6 +199,8 @@
         padding: 0;
         min-height: 0;
         touch-action: none; /* Enable custom touch handling */
+        /* Safe area bottom padding for mobile browser bottom bars */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     
     :root {

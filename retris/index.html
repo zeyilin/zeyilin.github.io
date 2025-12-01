@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0d0d0d">
     <meta name="description" content="RETRIS - A classic Tetris clone for the browser">
     <title>RETRIS</title>
@@ -100,10 +100,6 @@
                         <h2 class="screen-title">HIGH SCORES</h2>
                         <div class="scores-list" id="scores-list">
                             <!-- Scores rendered dynamically -->
-                        </div>
-                        <div class="tabs">
-                            <button class="tab active" data-tab="local">LOCAL</button>
-                            <button class="tab" data-tab="global">GLOBAL</button>
                         </div>
                         <button class="btn btn-primary btn-back" data-action="main-menu">M E N U</button>
                     </div>
@@ -250,6 +246,7 @@
     </div>
 
     <script src="js/utils.js"></script>
+    <script src="js/profanity-filter.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/tetromino.js"></script>
     <script src="js/board.js"></script>

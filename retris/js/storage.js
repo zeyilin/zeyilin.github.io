@@ -4,6 +4,7 @@ class Storage {
     constructor() {
         this.STORAGE_KEY = 'retris_highscores';
         this.INSTRUCTIONS_KEY = 'retris_instructions_shown';
+        this.profanityFilter = new ProfanityFilter();
     }
     
     /**
@@ -23,15 +24,21 @@ class Storage {
      * Save a new score
      */
     saveScore(name, score, level) {
-        const scores = this.getScores();
+        // Filter offensive words - replaces them with asterisks instead of rejecting
+        const sanitizedName = this.profanityFilter.sanitizeName(name);
+        
+        // Ensure we have a valid name (fallback to "Player" if all filtered)
+        const finalName = sanitize(sanitizedName.slice(0, 12)) || 'Player';
+        
         const newScore = {
             id: generateId(),
-            name: sanitize(name.slice(0, 12)),
+            name: finalName,
             score,
             level,
             date: new Date().toISOString()
         };
         
+        const scores = this.getScores();
         scores.push(newScore);
         scores.sort((a, b) => b.score - a.score);
         

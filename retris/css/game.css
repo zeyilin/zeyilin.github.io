@@ -10,6 +10,8 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    /* Ensure game board respects safe areas on mobile browsers */
+    margin-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 #game-canvas {

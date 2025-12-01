@@ -160,14 +160,6 @@ class App {
             });
         }
         
-        // Tab switching
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                this.renderHighScores(tab.dataset.tab);
-            });
-        });
     }
     
     /**
@@ -191,7 +183,7 @@ class App {
                 break;
             case 'high-scores':
                 this.showScreen('highscores');
-                this.renderHighScores('local');
+                this.renderHighScores();
                 break;
             case 'about':
                 this.showScreen('about');
@@ -296,7 +288,7 @@ class App {
         if (name) {
             this.storage.saveScore(name, this.game.score, this.game.level);
             this.showScreen('highscores');
-            this.renderHighScores('local');
+            this.renderHighScores();
         }
     }
     
@@ -355,11 +347,11 @@ class App {
     /**
      * Render high scores list
      */
-    renderHighScores(type = 'local') {
+    renderHighScores() {
         const container = this.elements.scoresList;
         if (!container) return;
         
-        const scores = type === 'local' ? this.storage.getScores() : [];
+        const scores = this.storage.getScores();
         
         if (scores.length === 0) {
             container.innerHTML = '<p class="no-scores">No scores yet. Play to set a record!</p>';
