@@ -168,23 +168,93 @@ class Controls {
      * Setup touch controls - gesture-based for mobile
      */
     setupTouchControls() {
-        // Get the game area for touch handling
-        const gameArea = document.querySelector('.game-area');
-        const canvas = document.getElementById('game-canvas');
+        // Wait for DOM to be ready, then setup touch handlers
+        const setupTouchHandlers = () => {
+            // Get the game area for touch handling
+            const gameArea = document.querySelector('.game-area');
+            const canvas = document.getElementById('game-canvas');
+            
+            // Prefer canvas, fallback to game area
+            const touchTarget = canvas || gameArea;
+            
+            if (touchTarget) {
+                // Remove any existing listeners to avoid duplicates
+                touchTarget.removeEventListener('touchstart', this.boundTouchStart);
+                touchTarget.removeEventListener('touchmove', this.boundTouchMove);
+                touchTarget.removeEventListener('touchend', this.boundTouchEnd);
+                touchTarget.removeEventListener('touchcancel', this.boundTouchEnd);
+                
+                // Bind handlers to preserve 'this' context
+                this.boundTouchStart = (e) => this.handleTouchStart(e);
+                this.boundTouchMove = (e) => this.handleTouchMove(e);
+                this.boundTouchEnd = (e) => this.handleTouchEnd(e);
+                
+                touchTarget.addEventListener('touchstart', this.boundTouchStart, { passive: false });
+                touchTarget.addEventListener('touchmove', this.boundTouchMove, { passive: false });
+                touchTarget.addEventListener('touchend', this.boundTouchEnd, { passive: false });
+                touchTarget.addEventListener('touchcancel', this.boundTouchEnd, { passive: false });
+            }
+        };
         
-        // Use game area or canvas for touch events
-        const touchTarget = gameArea || canvas;
-        
-        if (touchTarget) {
-            touchTarget.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-            touchTarget.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-            touchTarget.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-            touchTarget.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+        // Setup immediately if DOM is ready, otherwise wait
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupTouchHandlers);
+        } else {
+            setupTouchHandlers();
         }
+        
+        // Also setup mobile control buttons as backup
+        this.setupMobileButtons();
         
         // Update cell size when renderer updates
         this.updateCellSize();
         window.addEventListener('resize', () => this.updateCellSize());
+    }
+    
+    /**
+     * Setup mobile control buttons
+     */
+    setupMobileButtons() {
+        // Find all mobile control buttons
+        const buttons = document.querySelectorAll('[data-control]');
+        
+        buttons.forEach(button => {
+            // Use both click and touchstart for better mobile support
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleMobileButton(button.dataset.control);
+            });
+            
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.handleMobileButton(button.dataset.control);
+            });
+        });
+    }
+    
+    /**
+     * Handle mobile button press
+     */
+    handleMobileButton(control) {
+        if (!this.enabled || this.game.state !== 'playing') return;
+        
+        switch (control) {
+            case 'left':
+                this.game.moveLeft();
+                break;
+            case 'right':
+                this.game.moveRight();
+                break;
+            case 'down':
+                this.game.softDrop();
+                break;
+            case 'rotate':
+                this.game.rotate(1);
+                break;
+            case 'drop':
+                this.game.hardDrop();
+                break;
+        }
     }
     
     /**
@@ -213,7 +283,7 @@ class Controls {
         this.dragAccumulatorX = 0;
         this.dragAccumulatorY = 0;
         
-        // Prevent scrolling
+        // Prevent scrolling - always prevent on game canvas/area
         e.preventDefault();
     }
     

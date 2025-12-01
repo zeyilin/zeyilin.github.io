@@ -3,6 +3,7 @@
 class Storage {
     constructor() {
         this.STORAGE_KEY = 'retris_highscores';
+        this.INSTRUCTIONS_KEY = 'retris_instructions_shown';
     }
     
     /**
@@ -85,6 +86,28 @@ class Storage {
     getHighestScore() {
         const scores = this.getScores();
         return scores.length > 0 ? scores[0].score : 0;
+    }
+    
+    /**
+     * Check if instructions have been shown
+     */
+    hasSeenInstructions() {
+        try {
+            return localStorage.getItem(this.INSTRUCTIONS_KEY) === 'true';
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Mark instructions as shown
+     */
+    markInstructionsShown() {
+        try {
+            localStorage.setItem(this.INSTRUCTIONS_KEY, 'true');
+        } catch (e) {
+            console.warn('Could not save instructions status:', e);
+        }
     }
 }
 

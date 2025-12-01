@@ -487,3 +487,141 @@ kbd {
     font-size: 12px;
 }
 
+/* Instructions Screen */
+.instructions-content {
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    padding: var(--space-xl);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-container);
+    animation: modalIn 0.2s ease-out;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.instructions-title {
+    font-size: 36px;
+    font-weight: var(--font-weight-light);
+    letter-spacing: 4px;
+    margin-bottom: var(--space-xl);
+}
+
+.instructions-section {
+    margin-bottom: var(--space-xl);
+    text-align: left;
+}
+
+.instructions-section h3 {
+    font-size: 18px;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 2px;
+    margin-bottom: var(--space-md);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.instructions-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    text-align: center;
+}
+
+.controls-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm);
+    background-color: var(--bg-grid);
+    border-radius: var(--radius-inset);
+}
+
+.control-keys {
+    display: flex;
+    gap: var(--space-xs);
+    min-width: 80px;
+    justify-content: center;
+}
+
+.control-keys kbd {
+    display: inline-block;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, var(--metal-light) 0%, var(--metal-dark) 100%);
+    border-radius: var(--radius-sm);
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: var(--font-weight-semibold);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-inset);
+    min-width: 36px;
+    text-align: center;
+}
+
+.control-icon {
+    font-size: 32px;
+    min-width: 80px;
+    text-align: center;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-desc {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.scoring-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--bg-grid);
+    border-radius: var(--radius-inset);
+}
+
+.score-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.score-value {
+    font-size: 14px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.instructions-desktop,
+.instructions-mobile {
+    display: none;
+}
+
+/* Show appropriate instructions based on device */
+@media (max-width: 768px) {
+    .instructions-mobile {
+        display: block !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .instructions-desktop {
+        display: block !important;
+    }
+}
+

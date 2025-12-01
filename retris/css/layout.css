@@ -127,7 +127,7 @@
 /* Mobile */
 @media (max-width: 768px) {
     #app {
-        flex-direction: row;
+        flex-direction: column;
     }
     
     .game-container {
@@ -136,6 +136,7 @@
         flex: 1;
         padding: var(--space-sm);
         gap: var(--space-sm);
+        min-height: 0;
     }
     
     /* Keep sidebar on mobile but make it compact */
@@ -184,13 +185,13 @@
         letter-spacing: 1px;
     }
     
-    /* Hide mobile header and controls - use gestures instead */
+    /* Show mobile header and controls on mobile */
     .mobile-header {
-        display: none;
+        display: flex;
     }
     
     .mobile-controls {
-        display: none;
+        display: flex;
     }
     
     .game-area {
