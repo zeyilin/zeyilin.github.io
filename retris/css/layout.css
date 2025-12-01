@@ -79,9 +79,9 @@
     font-weight: var(--font-weight-light);
 }
 
-/* Mobile Controls */
+/* Mobile Controls - Hidden by default (gesture-based only) */
 .mobile-controls {
-    display: none;
+    display: none !important;
     flex-direction: column;
     gap: var(--space-sm);
     padding: var(--space-md);
